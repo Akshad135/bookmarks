@@ -9,6 +9,7 @@ import { BookmarkList } from '@/components/bookmarks/BookmarkList'
 import { AddBookmarkDialog } from '@/components/bookmarks/AddBookmarkDialog'
 import { Toaster } from '@/components/ui/sonner'
 import { useBookmarkStore } from '@/store/bookmark-store'
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import type { Bookmark } from '@/types'
 
 function App() {
@@ -18,6 +19,9 @@ function App() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
     const { viewMode } = useBookmarkStore()
+
+    // Initialize Supabase auth and realtime subscriptions
+    useSupabaseAuth()
 
     // Handle Share Target API
     useEffect(() => {

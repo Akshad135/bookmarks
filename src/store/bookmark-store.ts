@@ -2,6 +2,28 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Bookmark, Collection, Tag, ViewMode, SortOption, FilterSection } from '@/types'
 import { generateId } from '@/lib/utils'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
+
+// Helper to convert camelCase to snake_case for DB
+const toSnakeCase = (obj: Record<string, unknown>): Record<string, unknown> => {
+    const result: Record<string, unknown> = {}
+    for (const key in obj) {
+        const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
+        result[snakeKey] = obj[key]
+    }
+    return result
+}
+
+// Helper to convert snake_case to camelCase from DB
+const toCamelCase = <T>(obj: Record<string, unknown>): T => {
+    const result: Record<string, unknown> = {}
+    for (const key in obj) {
+        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+        result[camelKey] = obj[key]
+    }
+    return result as T
+}
 
 interface BookmarkState {
     bookmarks: Bookmark[]
@@ -12,6 +34,14 @@ interface BookmarkState {
     activeSection: FilterSection
     searchQuery: string
     selectedTags: string[]
+    user: User | null
+    isSyncing: boolean
+
+    // Auth actions
+    setUser: (user: User | null) => void
+
+    // Sync actions
+    fetchFromSupabase: () => Promise<void>
 
     // Bookmark actions
     addBookmark: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'isTrashed' | 'isArchived'>) => void
@@ -48,126 +78,12 @@ const defaultCollections: Collection[] = [
     { id: 'unsorted', name: 'Unsorted', icon: 'inbox', isSystem: true },
 ]
 
-const defaultTags: Tag[] = [
-    { id: 'react', name: 'React', color: '#61dafb' },
-    { id: 'typescript', name: 'TypeScript', color: '#3178c6' },
-    { id: 'ui-ux', name: 'UI/UX', color: '#f97316' },
-    { id: 'documentation', name: 'Documentation', color: '#22c55e' },
-    { id: 'tutorial', name: 'Tutorial', color: '#a855f7' },
-    { id: 'free', name: 'Free', color: '#eab308' },
-]
-
-const sampleBookmarks: Bookmark[] = [
-    {
-        id: '1',
-        title: 'shadcn/ui',
-        url: 'https://ui.shadcn.com',
-        description: 'Beautifully designed components built with Radix UI and Tailwind CSS.',
-        collectionId: 'unsorted',
-        tags: ['react', 'ui-ux', 'typescript'],
-        isFavorite: true,
-        isArchived: false,
-        isTrashed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: '2',
-        title: 'Vercel',
-        url: 'https://vercel.com',
-        description: 'Develop. Preview. Ship. The best frontend developer experience.',
-        collectionId: 'unsorted',
-        tags: ['react'],
-        isFavorite: true,
-        isArchived: false,
-        isTrashed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: '3',
-        title: 'Tailwind CSS',
-        url: 'https://tailwindcss.com',
-        description: 'A utility-first CSS framework for rapid UI development.',
-        collectionId: 'unsorted',
-        tags: ['documentation', 'ui-ux'],
-        isFavorite: false,
-        isArchived: false,
-        isTrashed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: '4',
-        title: 'React Documentation',
-        url: 'https://react.dev',
-        description: 'The library for web and native user interfaces.',
-        collectionId: 'unsorted',
-        tags: ['react', 'documentation', 'tutorial'],
-        isFavorite: true,
-        isArchived: false,
-        isTrashed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: '5',
-        title: 'TypeScript Handbook',
-        url: 'https://www.typescriptlang.org/docs/handbook/',
-        description: 'TypeScript is JavaScript with syntax for types.',
-        collectionId: 'unsorted',
-        tags: ['typescript', 'documentation'],
-        isFavorite: false,
-        isArchived: false,
-        isTrashed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: '6',
-        title: 'Figma',
-        url: 'https://figma.com',
-        description: 'The collaborative interface design tool.',
-        collectionId: 'unsorted',
-        tags: ['ui-ux', 'free'],
-        isFavorite: false,
-        isArchived: false,
-        isTrashed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: '7',
-        title: 'Next.js Documentation',
-        url: 'https://nextjs.org/docs',
-        description: 'The React Framework for the Web.',
-        collectionId: 'unsorted',
-        tags: ['react', 'documentation'],
-        isFavorite: false,
-        isArchived: false,
-        isTrashed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: '8',
-        title: 'Dribbble',
-        url: 'https://dribbble.com',
-        description: 'Discover the world\'s top designers & creatives.',
-        collectionId: 'unsorted',
-        tags: ['ui-ux'],
-        isFavorite: false,
-        isArchived: false,
-        isTrashed: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-]
+const defaultTags: Tag[] = []
 
 export const useBookmarkStore = create<BookmarkState>()(
     persist(
-        (set) => ({
-            bookmarks: sampleBookmarks,
+        (set, get) => ({
+            bookmarks: [],
             collections: defaultCollections,
             tags: defaultTags,
             viewMode: 'grid',
@@ -175,116 +91,353 @@ export const useBookmarkStore = create<BookmarkState>()(
             activeSection: 'all',
             searchQuery: '',
             selectedTags: [],
+            user: null,
+            isSyncing: false,
 
-            // Bookmark actions
-            addBookmark: (bookmark) =>
+            // Auth actions
+            setUser: (user) => set({ user }),
+
+            // Sync actions
+            fetchFromSupabase: async () => {
+                if (!isSupabaseConfigured() || !supabase) return
+                const { user } = get()
+                if (!user) return
+
+                set({ isSyncing: true })
+
+                try {
+                    const [bookmarksRes, collectionsRes, tagsRes] = await Promise.all([
+                        supabase.from('bookmarks').select('*'),
+                        supabase.from('collections').select('*'),
+                        supabase.from('tags').select('*'),
+                    ])
+
+                    const bookmarks = (bookmarksRes.data || []).map(b => toCamelCase<Bookmark>(b))
+                    const userCollections = (collectionsRes.data || []).map(c => toCamelCase<Collection>(c))
+                    const tags = (tagsRes.data || []).map(t => toCamelCase<Tag>(t))
+
+                    // Merge system collections with user collections
+                    const systemCollections = defaultCollections.filter(c => c.isSystem)
+                    const mergedCollections = [
+                        ...systemCollections,
+                        ...userCollections.filter(c => !c.isSystem)
+                    ]
+
+                    set({
+                        bookmarks,
+                        collections: mergedCollections,
+                        tags,
+                        isSyncing: false
+                    })
+                } catch (error) {
+                    console.error('Failed to fetch from Supabase:', error)
+                    set({ isSyncing: false })
+                }
+            },
+
+            // Bookmark actions with optimistic updates
+            addBookmark: async (bookmark) => {
+                const id = generateId()
+                const now = new Date().toISOString()
+                const newBookmark: Bookmark = {
+                    ...bookmark,
+                    id,
+                    isTrashed: false,
+                    isArchived: false,
+                    createdAt: now,
+                    updatedAt: now,
+                }
+
+                // Optimistic update
                 set((state) => ({
-                    bookmarks: [
-                        ...state.bookmarks,
-                        {
-                            ...bookmark,
-                            id: generateId(),
-                            isTrashed: false,
-                            isArchived: false,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString(),
-                        },
-                    ],
-                })),
+                    bookmarks: [...state.bookmarks, newBookmark],
+                }))
 
-            updateBookmark: (id, updates) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.map((b) =>
-                        b.id === id ? { ...b, ...updates, updatedAt: new Date().toISOString() } : b
-                    ),
-                })),
+                // Sync to Supabase
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const dbRecord = toSnakeCase({
+                        ...newBookmark,
+                        userId: user.id,
+                    })
+                    const { error } = await supabase.from('bookmarks').insert(dbRecord)
+                    if (error) {
+                        console.error('Failed to add bookmark to Supabase:', error)
+                        // Revert optimistic update
+                        set((state) => ({
+                            bookmarks: state.bookmarks.filter((b) => b.id !== id),
+                        }))
+                    }
+                }
+            },
 
-            deleteBookmark: (id) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.filter((b) => b.id !== id),
-                })),
+            updateBookmark: async (id, updates) => {
+                const now = new Date().toISOString()
 
-            toggleFavorite: (id) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.map((b) =>
-                        b.id === id ? { ...b, isFavorite: !b.isFavorite, updatedAt: new Date().toISOString() } : b
-                    ),
-                })),
+                // Optimistic update
+                let previousBookmark: Bookmark | undefined
+                set((state) => {
+                    previousBookmark = state.bookmarks.find((b) => b.id === id)
+                    return {
+                        bookmarks: state.bookmarks.map((b) =>
+                            b.id === id ? { ...b, ...updates, updatedAt: now } : b
+                        ),
+                    }
+                })
 
-            toggleArchive: (id) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.map((b) =>
-                        b.id === id ? { ...b, isArchived: !b.isArchived, updatedAt: new Date().toISOString() } : b
-                    ),
-                })),
+                // Sync to Supabase
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const dbUpdates = toSnakeCase({ ...updates, updatedAt: now })
+                    const { error } = await supabase.from('bookmarks').update(dbUpdates).eq('id', id)
+                    if (error) {
+                        console.error('Failed to update bookmark in Supabase:', error)
+                        // Revert
+                        if (previousBookmark) {
+                            set((state) => ({
+                                bookmarks: state.bookmarks.map((b) =>
+                                    b.id === id ? previousBookmark! : b
+                                ),
+                            }))
+                        }
+                    }
+                }
+            },
 
-            moveToTrash: (id) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.map((b) =>
-                        b.id === id ? { ...b, isTrashed: true, updatedAt: new Date().toISOString() } : b
-                    ),
-                })),
+            deleteBookmark: async (id) => {
+                // Optimistic update
+                let deletedBookmark: Bookmark | undefined
+                set((state) => {
+                    deletedBookmark = state.bookmarks.find((b) => b.id === id)
+                    return {
+                        bookmarks: state.bookmarks.filter((b) => b.id !== id),
+                    }
+                })
 
-            restoreFromTrash: (id) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.map((b) =>
-                        b.id === id ? { ...b, isTrashed: false, updatedAt: new Date().toISOString() } : b
-                    ),
-                })),
+                // Sync to Supabase
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const { error } = await supabase.from('bookmarks').delete().eq('id', id)
+                    if (error) {
+                        console.error('Failed to delete bookmark from Supabase:', error)
+                        // Revert
+                        if (deletedBookmark) {
+                            set((state) => ({
+                                bookmarks: [...state.bookmarks, deletedBookmark!],
+                            }))
+                        }
+                    }
+                }
+            },
 
-            permanentlyDelete: (id) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.filter((b) => b.id !== id),
-                })),
+            toggleFavorite: async (id) => {
+                const bookmark = get().bookmarks.find((b) => b.id === id)
+                if (bookmark) {
+                    get().updateBookmark(id, { isFavorite: !bookmark.isFavorite })
+                }
+            },
 
-            emptyTrash: () =>
+            toggleArchive: async (id) => {
+                const bookmark = get().bookmarks.find((b) => b.id === id)
+                if (bookmark) {
+                    get().updateBookmark(id, { isArchived: !bookmark.isArchived })
+                }
+            },
+
+            moveToTrash: (id) => {
+                get().updateBookmark(id, { isTrashed: true })
+            },
+
+            restoreFromTrash: (id) => {
+                get().updateBookmark(id, { isTrashed: false })
+            },
+
+            permanentlyDelete: (id) => {
+                get().deleteBookmark(id)
+            },
+
+            emptyTrash: async () => {
+                const trashedBookmarks = get().bookmarks.filter((b) => b.isTrashed)
+
+                // Optimistic update
                 set((state) => ({
                     bookmarks: state.bookmarks.filter((b) => !b.isTrashed),
-                })),
+                }))
+
+                // Sync to Supabase
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const ids = trashedBookmarks.map((b) => b.id)
+                    const { error } = await supabase.from('bookmarks').delete().in('id', ids)
+                    if (error) {
+                        console.error('Failed to empty trash in Supabase:', error)
+                        // Revert
+                        set((state) => ({
+                            bookmarks: [...state.bookmarks, ...trashedBookmarks],
+                        }))
+                    }
+                }
+            },
 
             // Collection actions
-            addCollection: (name, icon, color) =>
-                set((state) => ({
-                    collections: [
-                        ...state.collections,
-                        { id: generateId(), name, icon, color },
-                    ],
-                })),
+            addCollection: async (name, icon, color) => {
+                const id = generateId()
+                const newCollection: Collection = { id, name, icon, color }
 
-            updateCollection: (id, updates) =>
+                // Optimistic update
                 set((state) => ({
-                    collections: state.collections.map((c) =>
-                        c.id === id && !c.isSystem ? { ...c, ...updates } : c
-                    ),
-                })),
+                    collections: [...state.collections, newCollection],
+                }))
 
-            deleteCollection: (id) =>
-                set((state) => ({
-                    collections: state.collections.filter((c) => c.id !== id && !c.isSystem),
-                    bookmarks: state.bookmarks.map((b) =>
-                        b.collectionId === id ? { ...b, collectionId: 'unsorted' } : b
-                    ),
-                })),
+                // Sync to Supabase
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const dbRecord = toSnakeCase({
+                        ...newCollection,
+                        userId: user.id,
+                        isSystem: false,
+                    })
+                    const { error } = await supabase.from('collections').insert(dbRecord)
+                    if (error) {
+                        console.error('Failed to add collection to Supabase:', error)
+                        set((state) => ({
+                            collections: state.collections.filter((c) => c.id !== id),
+                        }))
+                    }
+                }
+            },
+
+            updateCollection: async (id, updates) => {
+                let previousCollection: Collection | undefined
+                set((state) => {
+                    previousCollection = state.collections.find((c) => c.id === id)
+                    return {
+                        collections: state.collections.map((c) =>
+                            c.id === id && !c.isSystem ? { ...c, ...updates } : c
+                        ),
+                    }
+                })
+
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const dbUpdates = toSnakeCase(updates)
+                    const { error } = await supabase.from('collections').update(dbUpdates).eq('id', id)
+                    if (error) {
+                        console.error('Failed to update collection in Supabase:', error)
+                        if (previousCollection) {
+                            set((state) => ({
+                                collections: state.collections.map((c) =>
+                                    c.id === id ? previousCollection! : c
+                                ),
+                            }))
+                        }
+                    }
+                }
+            },
+
+            deleteCollection: async (id) => {
+                let deletedCollection: Collection | undefined
+                set((state) => {
+                    deletedCollection = state.collections.find((c) => c.id === id)
+                    return {
+                        collections: state.collections.filter((c) => c.id !== id && !c.isSystem),
+                        bookmarks: state.bookmarks.map((b) =>
+                            b.collectionId === id ? { ...b, collectionId: 'unsorted' } : b
+                        ),
+                    }
+                })
+
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const { error } = await supabase.from('collections').delete().eq('id', id)
+                    if (error) {
+                        console.error('Failed to delete collection from Supabase:', error)
+                        if (deletedCollection) {
+                            set((state) => ({
+                                collections: [...state.collections, deletedCollection!],
+                            }))
+                        }
+                    }
+                }
+            },
 
             // Tag actions
-            addTag: (name, color) =>
-                set((state) => ({
-                    tags: [...state.tags, { id: generateId(), name, color }],
-                })),
+            addTag: async (name, color) => {
+                const id = generateId()
+                const newTag: Tag = { id, name, color }
 
-            updateTag: (id, updates) =>
                 set((state) => ({
-                    tags: state.tags.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-                })),
+                    tags: [...state.tags, newTag],
+                }))
 
-            deleteTag: (id) =>
-                set((state) => ({
-                    tags: state.tags.filter((t) => t.id !== id),
-                    bookmarks: state.bookmarks.map((b) => ({
-                        ...b,
-                        tags: b.tags.filter((t) => t !== id),
-                    })),
-                })),
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const dbRecord = toSnakeCase({
+                        ...newTag,
+                        userId: user.id,
+                    })
+                    const { error } = await supabase.from('tags').insert(dbRecord)
+                    if (error) {
+                        console.error('Failed to add tag to Supabase:', error)
+                        set((state) => ({
+                            tags: state.tags.filter((t) => t.id !== id),
+                        }))
+                    }
+                }
+            },
+
+            updateTag: async (id, updates) => {
+                let previousTag: Tag | undefined
+                set((state) => {
+                    previousTag = state.tags.find((t) => t.id === id)
+                    return {
+                        tags: state.tags.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+                    }
+                })
+
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const dbUpdates = toSnakeCase(updates)
+                    const { error } = await supabase.from('tags').update(dbUpdates).eq('id', id)
+                    if (error) {
+                        console.error('Failed to update tag in Supabase:', error)
+                        if (previousTag) {
+                            set((state) => ({
+                                tags: state.tags.map((t) =>
+                                    t.id === id ? previousTag! : t
+                                ),
+                            }))
+                        }
+                    }
+                }
+            },
+
+            deleteTag: async (id) => {
+                let deletedTag: Tag | undefined
+                set((state) => {
+                    deletedTag = state.tags.find((t) => t.id === id)
+                    return {
+                        tags: state.tags.filter((t) => t.id !== id),
+                        bookmarks: state.bookmarks.map((b) => ({
+                            ...b,
+                            tags: b.tags.filter((t) => t !== id),
+                        })),
+                    }
+                })
+
+                const { user } = get()
+                if (isSupabaseConfigured() && supabase && user) {
+                    const { error } = await supabase.from('tags').delete().eq('id', id)
+                    if (error) {
+                        console.error('Failed to delete tag from Supabase:', error)
+                        if (deletedTag) {
+                            set((state) => ({
+                                tags: [...state.tags, deletedTag!],
+                            }))
+                        }
+                    }
+                }
+            },
 
             // UI actions
             setViewMode: (mode) => set({ viewMode: mode }),
@@ -301,6 +454,15 @@ export const useBookmarkStore = create<BookmarkState>()(
         }),
         {
             name: 'bookmark-manager-storage',
+            partialize: (state) => ({
+                bookmarks: state.bookmarks,
+                collections: state.collections,
+                tags: state.tags,
+                viewMode: state.viewMode,
+                sortOption: state.sortOption,
+                activeSection: state.activeSection,
+                // Don't persist user, isSyncing, searchQuery, selectedTags
+            }),
         }
     )
 )
