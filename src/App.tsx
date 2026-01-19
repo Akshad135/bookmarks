@@ -45,7 +45,7 @@ function App() {
                 setInitialDialogData({
                     title: title || '',
                     url: finalUrl,
-                    description: text !== finalUrl ? text : '', // Use text as description if it's not just the URL
+                    description: (text && text !== finalUrl) ? text : '', // Use text as description if it's not just the URL
                 })
                 setIsAddDialogOpen(true)
             }
