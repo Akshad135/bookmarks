@@ -24,11 +24,7 @@ interface AddBookmarkDialogProps {
     initialData?: Partial<Bookmark> | null
 }
 
-interface UrlMetadata {
-    title: string
-    description: string
-    image: string
-}
+import { fetchMetadata } from '@/lib/metadata'
 
 export function AddBookmarkDialog({
     open,
@@ -83,27 +79,8 @@ export function AddBookmarkDialog({
         setFetchError('')
     }
 
-    const fetchMetadata = async (targetUrl: string): Promise<UrlMetadata | null> => {
-        try {
-            // Use a CORS proxy or metadata API to fetch the page
-            // Option 1: Use a free metadata API
-            const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(targetUrl)}`
-            const response = await fetch(apiUrl)
-            if (!response.ok) return null
-            const data = await response.json()
+    // fetchMetadata moved to @/lib/metadata
 
-            if (data.status === 'success') {
-                return {
-                    title: data.data.title || '',
-                    description: data.data.description || '',
-                    image: data.data.image?.url || data.data.logo?.url || '',
-                }
-            }
-            return null
-        } catch {
-            return null
-        }
-    }
 
     const handleFetchMetadata = async (urlOverride?: string) => {
         const targetUrl = urlOverride || url

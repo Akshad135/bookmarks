@@ -41,7 +41,7 @@ interface ImportStats {
 }
 
 export function ImportBookmarksDialog({ open, onOpenChange }: ImportBookmarksDialogProps) {
-    const { bookmarks, addBookmark } = useBookmarkStore()
+    const { bookmarks, addBookmark, collections, addCollection } = useBookmarkStore()
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [step, setStep] = useState<ImportStep>('select')
@@ -106,18 +106,42 @@ export function ImportBookmarksDialog({ open, onOpenChange }: ImportBookmarksDia
         // Import in batches to avoid UI blocking
         const batchSize = 10
 
+        // Create folder map ONCE before the loop, populated with existing collections (case-insensitive)
+        const folderMap = new Map<string, string>()
+        collections.forEach(c => folderMap.set(c.name.toLowerCase(), c.id))
+
         for (let i = 0; i < toImport.length; i += batchSize) {
             const batch = toImport.slice(i, i + batchSize)
 
+            // Process collections for the batch - check against our persistent folderMap
+            for (const bookmark of batch) {
+                if (bookmark.folder) {
+                    const folderName = bookmark.folder.split('/').pop() || ''
+                    if (folderName && !folderMap.has(folderName.toLowerCase())) {
+                        // Create collection if it doesn't exist
+                        try {
+                            const newId = await addCollection(folderName, 'folder')
+                            // Add to our persistent map so future batches see it
+                            folderMap.set(folderName.toLowerCase(), newId)
+                        } catch (e) {
+                            console.error('Failed to create collection for folder:', folderName, e)
+                        }
+                    }
+                }
+            }
+
+            // Import bookmarks in the batch (no metadata fetching to avoid rate limits)
             for (const parsed of batch) {
                 try {
+                    const folderName = parsed.folder?.split('/').pop()?.toLowerCase() || ''
+                    const collectionId = folderName ? (folderMap.get(folderName) || 'unsorted') : 'unsorted'
 
                     await addBookmark({
                         url: parsed.url,
                         title: parsed.title,
-                        description: undefined,
+                        description: undefined, // Skip metadata fetching for now
                         thumbnail: undefined,
-                        collectionId: 'unsorted',
+                        collectionId,
                         tags: [],
                         isFavorite: false,
                         favicon: getFaviconUrl(parsed.url),
@@ -132,7 +156,7 @@ export function ImportBookmarksDialog({ open, onOpenChange }: ImportBookmarksDia
             setImportProgress(Math.round(((i + batch.length) / total) * 100))
 
             // Small delay between batches to keep UI responsive
-            await new Promise(resolve => setTimeout(resolve, 50))
+            await new Promise(resolve => setTimeout(resolve, 100))
         }
 
         setStats({

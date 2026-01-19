@@ -56,7 +56,7 @@ interface BookmarkState {
     emptyTrash: () => void
 
     // Collection actions
-    addCollection: (name: string, icon?: string, color?: string) => void
+    addCollection: (name: string, icon?: string, color?: string) => Promise<string>
     updateCollection: (id: string, updates: Partial<Collection>) => void
     deleteCollection: (id: string) => void
 
@@ -336,6 +336,7 @@ export const useBookmarkStore = create<BookmarkState>()(
                         }))
                     }
                 }
+                return id
             },
 
             updateCollection: async (id, updates) => {
