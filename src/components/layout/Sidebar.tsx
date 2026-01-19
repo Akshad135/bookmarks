@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { config } from '@/lib/config'
+import { ImportBookmarksDialog } from '@/components/bookmarks/ImportBookmarksDialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -24,6 +26,7 @@ import {
     Plus,
     Inbox,
     X,
+    Upload,
 } from 'lucide-react'
 
 const TAG_COLORS = [
@@ -61,6 +64,7 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
     const [newTagName, setNewTagName] = useState('')
     const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0])
     const [hexInput, setHexInput] = useState(TAG_COLORS[0])
+    const [isImportOpen, setIsImportOpen] = useState(false)
 
     const getCollectionCount = (collectionId: string) => {
         if (collectionId === 'all') {
@@ -140,17 +144,27 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                     isCollapsed ? "justify-center" : "justify-between"
                 )}>
                     <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-orange-400 shadow-sm">
-                            <Bookmark className="h-5 w-5 text-white fill-white/20" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-orange-400 shadow-sm overflow-hidden">
+                            {config.appIcon ? (
+                                <img
+                                    src={config.appIcon}
+                                    alt={config.appName}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <Bookmark className="h-5 w-5 text-white fill-white/20" />
+                            )}
                         </div>
                         {!isCollapsed && (
                             <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
                                 <span className="text-sm font-semibold text-sidebar-foreground truncate">
-                                    Bookmarks
+                                    {config.appName}
                                 </span>
-                                <span className="text-xs text-sidebar-muted truncate">
-                                    Local Storage
-                                </span>
+                                {config.appSubtitle && (
+                                    <span className="text-xs text-sidebar-muted truncate">
+                                        {config.appSubtitle}
+                                    </span>
+                                )}
                             </div>
                         )}
                     </div>
@@ -191,6 +205,22 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                                 )}
                             </Button>
                         ))}
+
+                        {/* Import Bookmarks Button */}
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsImportOpen(true)}
+                            className={cn(
+                                'w-full h-10 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
+                                isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
+                            )}
+                            title={isCollapsed ? "Import Bookmarks" : undefined}
+                        >
+                            <Upload className="h-5 w-5 shrink-0" />
+                            {!isCollapsed && (
+                                <span className="flex-1 text-left text-sm truncate">Import</span>
+                            )}
+                        </Button>
                     </div>
 
                     <Separator className="my-2 bg-sidebar-border" />
@@ -433,6 +463,9 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Import Bookmarks Dialog */}
+            <ImportBookmarksDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
         </>
     )
 }
