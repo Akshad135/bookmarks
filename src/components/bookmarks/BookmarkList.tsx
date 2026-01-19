@@ -13,7 +13,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { getDomainFromUrl, getFaviconUrl, cn } from '@/lib/utils'
+import { getDomainFromUrl, getFaviconUrl, cn, truncateText } from '@/lib/utils'
 import type { Bookmark } from '@/types'
 import {
     Heart,
@@ -95,7 +95,8 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                         className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
                         onClick={handleOpenUrl}
                     >
-                        {bookmark.title}
+                        <span className="md:hidden">{truncateText(bookmark.title, 20)}</span>
+                        <span className="hidden md:inline">{bookmark.title}</span>
                     </h3>
                     {/* Tags next to title - visible on md+ */}
                     <div className="hidden md:flex items-center gap-1.5 shrink-0">
@@ -121,7 +122,8 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                 </div>
                 {/* Domain */}
                 <div className="text-sm text-muted-foreground truncate">
-                    {domain}
+                    <span className="md:hidden">{truncateText(domain, 30)}</span>
+                    <span className="hidden md:inline">{domain}</span>
                 </div>
                 {/* Tags on mobile - show on new line */}
                 {bookmarkTags.length > 0 && (
