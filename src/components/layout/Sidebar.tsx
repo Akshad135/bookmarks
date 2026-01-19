@@ -117,27 +117,27 @@ export function Sidebar() {
 
     return (
         <>
-            <aside className="flex h-screen w-[16rem] flex-col border-r border-sidebar-border bg-sidebar">
+            <aside className="flex h-screen w-[17rem] flex-col border-r border-sidebar-border bg-sidebar">
                 {/* Logo */}
-                <div className="flex h-14 items-center gap-3 px-4 border-b border-sidebar-border">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                        <Bookmark className="h-4 w-4 text-primary-foreground" />
+                <div className="flex h-16 items-center gap-3 px-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+                        <Bookmark className="h-5 w-5 text-primary-foreground" />
                     </div>
-                    <span className="text-base font-semibold text-sidebar-foreground">
+                    <span className="text-lg font-semibold text-sidebar-foreground">
                         Bookmarks
                     </span>
                 </div>
 
-                <ScrollArea className="flex-1 py-2">
+                <ScrollArea className="flex-1 px-2 py-2">
                     {/* Main Navigation */}
-                    <div className="space-y-0.5 px-2">
+                    <div className="space-y-1 pb-4">
                         {navItems.map((item) => (
                             <Button
                                 key={item.id}
                                 variant="ghost"
                                 onClick={() => setActiveSection(item.id)}
                                 className={cn(
-                                    'w-full justify-start gap-3 px-3 h-9 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
+                                    'w-full justify-start gap-3 px-3 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
                                     activeSection === item.id &&
                                     'bg-sidebar-border text-sidebar-foreground'
                                 )}
@@ -149,24 +149,24 @@ export function Sidebar() {
                         ))}
                     </div>
 
-                    <Separator className="my-3 bg-sidebar-border" />
+                    <Separator className="my-2 bg-sidebar-border" />
 
                     {/* Collections */}
-                    <div className="px-2">
-                        <div className="flex items-center justify-between px-3 py-1.5 mb-1">
-                            <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-sidebar-muted">
+                    <div className="py-2">
+                        <div className="flex items-center justify-between px-3 py-2">
+                            <span className="text-xs font-medium uppercase tracking-wider text-sidebar-muted">
                                 Collections
                             </span>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-sidebar-muted hover:text-sidebar-foreground"
+                                className="h-6 w-6 text-sidebar-muted hover:text-sidebar-foreground"
                                 onClick={() => setIsAddCollectionOpen(true)}
                             >
-                                <Plus className="h-3 w-3" />
+                                <Plus className="h-3.5 w-3.5" />
                             </Button>
                         </div>
-                        <div className="space-y-0.5">
+                        <div className="space-y-1">
                             {collections
                                 .filter((c) => !c.isSystem)
                                 .map((collection) => (
@@ -175,7 +175,7 @@ export function Sidebar() {
                                         variant="ghost"
                                         onClick={() => setActiveSection(collection.id)}
                                         className={cn(
-                                            'w-full justify-start gap-3 px-3 h-8 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
+                                            'w-full justify-start gap-3 px-3 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
                                             activeSection === collection.id &&
                                             'bg-sidebar-border text-sidebar-foreground'
                                         )}
@@ -193,7 +193,7 @@ export function Sidebar() {
                                 variant="ghost"
                                 onClick={() => setActiveSection('unsorted')}
                                 className={cn(
-                                    'w-full justify-start gap-3 px-3 h-8 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
+                                    'w-full justify-start gap-3 px-3 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
                                     activeSection === 'unsorted' &&
                                     'bg-sidebar-border text-sidebar-foreground'
                                 )}
@@ -207,42 +207,42 @@ export function Sidebar() {
                         </div>
                     </div>
 
-                    <Separator className="my-3 bg-sidebar-border" />
+                    <Separator className="my-2 bg-sidebar-border" />
 
                     {/* Tags */}
-                    <div className="px-2">
-                        <div className="flex items-center justify-between px-3 py-1.5 mb-1">
-                            <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-sidebar-muted">
+                    <div className="py-2">
+                        <div className="flex items-center justify-between px-3 py-2">
+                            <span className="text-xs font-medium uppercase tracking-wider text-sidebar-muted">
                                 Tags
                             </span>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-sidebar-muted hover:text-sidebar-foreground"
+                                className="h-6 w-6 text-sidebar-muted hover:text-sidebar-foreground"
                                 onClick={() => setIsAddTagOpen(true)}
                             >
-                                <Plus className="h-3 w-3" />
+                                <Plus className="h-3.5 w-3.5" />
                             </Button>
                         </div>
-                        <div className="space-y-0.5">
+                        <div className="space-y-1 px-1">
                             {tags.map((tag) => (
                                 <Button
                                     key={tag.id}
                                     variant="ghost"
                                     onClick={() => toggleTag(tag.id)}
                                     className={cn(
-                                        'w-full justify-start gap-3 px-3 h-8 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
+                                        'w-full justify-start gap-3 px-3 h-9 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
                                         selectedTags.includes(tag.id) && 'bg-sidebar-border text-sidebar-foreground'
                                     )}
                                 >
                                     <div
-                                        className="h-2.5 w-2.5 rounded-full ring-1 ring-white/20"
+                                        className="h-3 w-3 rounded-full ring-1 ring-white/10"
                                         style={{ backgroundColor: tag.color }}
                                     />
                                     <span className="flex-1 text-left text-sm">{tag.name}</span>
                                     <Badge
                                         variant="secondary"
-                                        className="h-5 min-w-[1.25rem] justify-center px-1.5 text-[0.65rem]"
+                                        className="h-5 min-w-[1.25rem] justify-center px-1.5 text-xs"
                                     >
                                         {getTagCount(tag.id)}
                                     </Badge>
@@ -253,14 +253,14 @@ export function Sidebar() {
                 </ScrollArea>
 
                 {/* Footer */}
-                <div className="border-t border-sidebar-border p-3">
-                    <div className="flex items-center gap-2.5">
-                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-orange-400" />
+                <div className="border-t border-sidebar-border p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-orange-400" />
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-sidebar-foreground truncate">
                                 My Bookmarks
                             </p>
-                            <p className="text-[0.65rem] text-sidebar-muted">Local Storage</p>
+                            <p className="text-xs text-sidebar-muted">Local Storage</p>
                         </div>
                     </div>
                 </div>
@@ -268,7 +268,7 @@ export function Sidebar() {
 
             {/* Add Collection Dialog */}
             <Dialog open={isAddCollectionOpen} onOpenChange={setIsAddCollectionOpen}>
-                <DialogContent className="sm:max-w-[380px]">
+                <DialogContent className="sm:max-w-[400px]">
                     <DialogHeader>
                         <DialogTitle>New Collection</DialogTitle>
                         <DialogDescription>
@@ -292,11 +292,11 @@ export function Sidebar() {
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsAddCollectionOpen(false)}>
+                        <Button variant="outline" onClick={() => setIsAddCollectionOpen(false)}>
                             Cancel
                         </Button>
                         <Button onClick={handleAddCollection} disabled={!newCollectionName.trim()}>
-                            Create
+                            Create Collection
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -304,7 +304,7 @@ export function Sidebar() {
 
             {/* Add Tag Dialog */}
             <Dialog open={isAddTagOpen} onOpenChange={setIsAddTagOpen}>
-                <DialogContent className="sm:max-w-[380px]">
+                <DialogContent className="sm:max-w-[400px]">
                     <DialogHeader>
                         <DialogTitle>New Tag</DialogTitle>
                         <DialogDescription>
@@ -337,7 +337,7 @@ export function Sidebar() {
                                         type="button"
                                         onClick={() => handleColorSelect(color)}
                                         className={cn(
-                                            'h-7 w-7 rounded-full transition-all hover:scale-110',
+                                            'h-8 w-8 rounded-full transition-all hover:scale-110',
                                             newTagColor === color && 'ring-2 ring-offset-2 ring-offset-background ring-primary'
                                         )}
                                         style={{ backgroundColor: color }}
@@ -346,7 +346,7 @@ export function Sidebar() {
                             </div>
                             <div className="flex items-center gap-2 mt-3">
                                 <div
-                                    className="h-8 w-8 rounded-md border border-border"
+                                    className="h-9 w-9 rounded-md border border-border shrink-0"
                                     style={{ backgroundColor: newTagColor }}
                                 />
                                 <Input
@@ -359,11 +359,11 @@ export function Sidebar() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsAddTagOpen(false)}>
+                        <Button variant="outline" onClick={() => setIsAddTagOpen(false)}>
                             Cancel
                         </Button>
                         <Button onClick={handleAddTag} disabled={!newTagName.trim()}>
-                            Create
+                            Create Tag
                         </Button>
                     </DialogFooter>
                 </DialogContent>
