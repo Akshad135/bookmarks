@@ -53,7 +53,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
     return (
         <div
             className={cn(
-                'group flex items-center gap-2 md:gap-4 rounded-lg border border-border bg-card p-2 md:p-3 transition-all duration-200 overflow-hidden',
+                'group flex items-center gap-2 md:gap-4 rounded-lg border border-border bg-card p-2 md:p-3 transition-all duration-200',
                 'hover:border-primary/30 hover:bg-card/80'
             )}
         >
@@ -82,17 +82,17 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0">
-                {/* Title and Tags Row */}
-                <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex-1 min-w-0 overflow-hidden">
+                {/* Title Row */}
+                <div className="flex items-center gap-2">
                     <h3
                         className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
                         onClick={handleOpenUrl}
                     >
                         {bookmark.title}
                     </h3>
-                    {/* Tags next to title */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Tags next to title - visible on md+ */}
+                    <div className="hidden md:flex items-center gap-1.5 shrink-0">
                         {bookmarkTags.slice(0, 2).map((tag) => (
                             <Badge
                                 key={tag.id}
@@ -113,9 +113,33 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                         )}
                     </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="truncate">{domain}</span>
+                {/* Domain */}
+                <div className="text-sm text-muted-foreground truncate">
+                    {domain}
                 </div>
+                {/* Tags on mobile - show on new line */}
+                {bookmarkTags.length > 0 && (
+                    <div className="flex md:hidden items-center gap-1 mt-1 flex-wrap">
+                        {bookmarkTags.slice(0, 2).map((tag) => (
+                            <Badge
+                                key={tag.id}
+                                variant="secondary"
+                                className="text-[10px] px-1.5 py-0"
+                                style={{
+                                    backgroundColor: `${tag.color}20`,
+                                    color: tag.color,
+                                }}
+                            >
+                                {tag.name}
+                            </Badge>
+                        ))}
+                        {bookmarkTags.length > 2 && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                +{bookmarkTags.length - 2}
+                            </Badge>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Actions - always visible */}
@@ -141,7 +165,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 md:h-8 md:w-8"
+                            className="hidden md:inline-flex h-8 w-8"
                             onClick={handleOpenUrl}
                         >
                             <ExternalLink className="h-4 w-4" />
