@@ -89,6 +89,7 @@ export function AddBookmarkDialog({
             // Option 1: Use a free metadata API
             const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(targetUrl)}`
             const response = await fetch(apiUrl)
+            if (!response.ok) return null
             const data = await response.json()
 
             if (data.status === 'success') {
@@ -126,7 +127,7 @@ export function AddBookmarkDialog({
                 if (!description && metadata.description) setDescription(metadata.description)
                 if (!thumbnail && metadata.image) setThumbnail(metadata.image)
             } else {
-                const urlObj = new URL(url)
+                const urlObj = new URL(targetUrl)
                 const hostname = urlObj.hostname.replace('www.', '')
                 if (!title) setTitle(hostname)
             }

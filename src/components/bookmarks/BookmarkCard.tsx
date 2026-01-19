@@ -50,8 +50,12 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
     }
 
     const handleCopyUrl = async () => {
-        await navigator.clipboard.writeText(bookmark.url)
-        toast.success('URL copied to clipboard')
+        try {
+            await navigator.clipboard.writeText(bookmark.url)
+            toast.success('URL copied to clipboard')
+        } catch {
+            toast.error('Failed to copy URL')
+        }
     }
 
     const handleToggleFavorite = (e?: React.MouseEvent) => {

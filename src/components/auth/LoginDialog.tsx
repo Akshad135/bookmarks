@@ -33,11 +33,15 @@ export function LoginDialog({ open, onLogin, isLoading = false }: LoginDialogPro
         }
 
         setIsSubmitting(true)
-        const result = await onLogin(email, password)
-        setIsSubmitting(false)
-
-        if (result.error) {
-            setError(result.error)
+        try {
+            const result = await onLogin(email, password)
+            if (result.error) {
+                setError(result.error)
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 

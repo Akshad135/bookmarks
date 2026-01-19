@@ -112,6 +112,20 @@ export const useBookmarkStore = create<BookmarkState>()(
                         supabase.from('tags').select('*'),
                     ])
 
+                    // Check for errors before overwriting state
+                    if (bookmarksRes.error) {
+                        console.error('Failed to fetch bookmarks:', bookmarksRes.error)
+                        return
+                    }
+                    if (collectionsRes.error) {
+                        console.error('Failed to fetch collections:', collectionsRes.error)
+                        return
+                    }
+                    if (tagsRes.error) {
+                        console.error('Failed to fetch tags:', tagsRes.error)
+                        return
+                    }
+
                     const bookmarks = (bookmarksRes.data || []).map(b => toCamelCase<Bookmark>(b))
                     const userCollections = (collectionsRes.data || []).map(c => toCamelCase<Collection>(c))
                     const tags = (tagsRes.data || []).map(t => toCamelCase<Tag>(t))
@@ -127,10 +141,10 @@ export const useBookmarkStore = create<BookmarkState>()(
                         bookmarks,
                         collections: mergedCollections,
                         tags,
-                        isSyncing: false
                     })
                 } catch (error) {
                     console.error('Failed to fetch from Supabase:', error)
+                } finally {
                     set({ isSyncing: false })
                 }
             },
@@ -258,6 +272,11 @@ export const useBookmarkStore = create<BookmarkState>()(
 
             emptyTrash: async () => {
                 const trashedBookmarks = get().bookmarks.filter((b) => b.isTrashed)
+
+                // Early return if no items to delete
+                if (trashedBookmarks.length === 0) {
+                    return
+                }
 
                 // Optimistic update
                 set((state) => ({
