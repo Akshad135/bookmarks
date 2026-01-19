@@ -124,15 +124,17 @@ function App() {
 
                     {/* Content */}
                     <ScrollArea className="flex-1">
-                        {/* Stats */}
-                        <StatsCards />
+                        <div className="w-full max-w-full">
+                            {/* Stats */}
+                            <StatsCards />
 
-                        {/* Bookmarks View */}
-                        {viewMode === 'grid' ? (
-                            <BookmarkGrid onEditBookmark={handleEditBookmark} />
-                        ) : (
-                            <BookmarkList onEditBookmark={handleEditBookmark} />
-                        )}
+                            {/* Bookmarks View */}
+                            {viewMode === 'grid' ? (
+                                <BookmarkGrid onEditBookmark={handleEditBookmark} />
+                            ) : (
+                                <BookmarkList onEditBookmark={handleEditBookmark} />
+                            )}
+                        </div>
                     </ScrollArea>
                 </div>
 

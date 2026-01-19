@@ -59,7 +59,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
     return (
         <div
             className={cn(
-                'group flex items-center gap-2 md:gap-4 rounded-lg border border-border bg-card p-2 md:p-3 transition-all duration-200',
+                'group relative flex items-center gap-2 md:gap-4 rounded-lg border border-border bg-card p-2 md:p-3 transition-all duration-200 max-w-full',
                 'hover:border-primary/30 hover:bg-card/80'
             )}
         >
@@ -88,7 +88,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex-1 min-w-0 overflow-hidden pr-16 md:pr-0">
                 {/* Title Row */}
                 <div className="flex items-center gap-2">
                     <h3
@@ -126,7 +126,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                 {/* Tags on mobile - show on new line */}
                 {bookmarkTags.length > 0 && (
                     <div className="flex md:hidden items-center gap-1 mt-1 flex-wrap">
-                        {bookmarkTags.slice(0, 2).map((tag) => (
+                        {bookmarkTags.slice(0, 3).map((tag) => (
                             <Badge
                                 key={tag.id}
                                 variant="secondary"
@@ -139,17 +139,12 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                                 {tag.name}
                             </Badge>
                         ))}
-                        {bookmarkTags.length > 2 && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                +{bookmarkTags.length - 2}
-                            </Badge>
-                        )}
                     </div>
                 )}
             </div>
 
-            {/* Actions - always visible */}
-            <div className="flex items-center shrink-0">
+            {/* Actions - absolute on mobile, flex on desktop */}
+            <div className="absolute right-2 top-2 flex md:static items-center shrink-0 bg-card/80 backdrop-blur-sm md:bg-transparent rounded-bl-lg md:rounded-none pl-1 md:pl-0">
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
@@ -278,7 +273,7 @@ export function BookmarkList({ onEditBookmark }: BookmarkListProps) {
     }
 
     return (
-        <div className="flex flex-col gap-2 p-3 md:p-6">
+        <div className="flex flex-col gap-2 p-3 md:p-6 overflow-hidden max-w-full">
             {filteredBookmarks.map((bookmark) => (
                 <BookmarkListItem
                     key={bookmark.id}
