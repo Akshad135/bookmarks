@@ -7,6 +7,7 @@ import { StatsCards } from '@/components/stats/StatsCards'
 import { BookmarkGrid } from '@/components/bookmarks/BookmarkGrid'
 import { BookmarkList } from '@/components/bookmarks/BookmarkList'
 import { AddBookmarkDialog } from '@/components/bookmarks/AddBookmarkDialog'
+import { Toaster } from '@/components/ui/sonner'
 import { useBookmarkStore } from '@/store/bookmark-store'
 import type { Bookmark } from '@/types'
 
@@ -63,6 +64,7 @@ function App() {
                     onOpenChange={handleDialogClose}
                     editBookmark={editingBookmark}
                 />
+                <Toaster />
             </div>
         </TooltipProvider>
     )

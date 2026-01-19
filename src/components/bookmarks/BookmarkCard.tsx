@@ -17,6 +17,7 @@ import {
 import { useBookmarkStore } from '@/store/bookmark-store'
 import { getDomainFromUrl, getFaviconUrl, formatDate, cn } from '@/lib/utils'
 import type { Bookmark } from '@/types'
+import { toast } from 'sonner'
 import {
     Heart,
     MoreHorizontal,
@@ -50,6 +51,33 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
 
     const handleCopyUrl = async () => {
         await navigator.clipboard.writeText(bookmark.url)
+        toast.success('URL copied to clipboard')
+    }
+
+    const handleToggleFavorite = (e?: React.MouseEvent) => {
+        e?.stopPropagation()
+        toggleFavorite(bookmark.id)
+        toast.success(bookmark.isFavorite ? 'Removed from favorites' : 'Added to favorites')
+    }
+
+    const handleToggleArchive = () => {
+        toggleArchive(bookmark.id)
+        toast.success(bookmark.isArchived ? 'Bookmark unarchived' : 'Bookmark archived')
+    }
+
+    const handleMoveToTrash = () => {
+        moveToTrash(bookmark.id)
+        toast.success('Moved to trash')
+    }
+
+    const handleRestore = () => {
+        restoreFromTrash(bookmark.id)
+        toast.success('Bookmark restored')
+    }
+
+    const handleDeletePermanent = () => {
+        permanentlyDelete(bookmark.id)
+        toast.success('Bookmark permanently deleted')
     }
 
     return (
@@ -116,10 +144,7 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                                     'h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background',
                                     bookmark.isFavorite && 'text-red-500'
                                 )}
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleFavorite(bookmark.id)
-                                }}
+                                onClick={handleToggleFavorite}
                             >
                                 <Heart
                                     className={cn('h-4 w-4', bookmark.isFavorite && 'fill-current')}
@@ -158,7 +183,7 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                                         <Pencil className="mr-2 h-4 w-4" />
                                         Edit
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => toggleArchive(bookmark.id)}>
+                                    <DropdownMenuItem onClick={handleToggleArchive}>
                                         {bookmark.isArchived ? (
                                             <>
                                                 <ArchiveRestore className="mr-2 h-4 w-4" />
@@ -173,7 +198,7 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                        onClick={() => moveToTrash(bookmark.id)}
+                                        onClick={handleMoveToTrash}
                                         className="text-destructive focus:text-destructive"
                                     >
                                         <Trash2 className="mr-2 h-4 w-4" />
@@ -184,12 +209,12 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                             {bookmark.isTrashed && (
                                 <>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => restoreFromTrash(bookmark.id)}>
+                                    <DropdownMenuItem onClick={handleRestore}>
                                         <RotateCcw className="mr-2 h-4 w-4" />
                                         Restore
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        onClick={() => permanentlyDelete(bookmark.id)}
+                                        onClick={handleDeletePermanent}
                                         className="text-destructive focus:text-destructive"
                                     >
                                         <Trash2 className="mr-2 h-4 w-4" />

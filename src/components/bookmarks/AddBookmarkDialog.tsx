@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { useBookmarkStore } from '@/store/bookmark-store'
 import { getFaviconUrl } from '@/lib/utils'
 import type { Bookmark } from '@/types'
+import { toast } from 'sonner'
 import { Loader2, Link, Tag, Globe, Sparkles } from 'lucide-react'
 
 interface AddBookmarkDialogProps {
@@ -148,18 +149,8 @@ export function AddBookmarkDialog({
 
         if (!url || !title) return
 
-        if (isEditing && editBookmark) {
-            updateBookmark(editBookmark.id, {
-                url,
-                title,
-                description: description || undefined,
-                thumbnail: thumbnail || undefined,
-                collectionId,
-                tags: selectedTagIds,
-                isFavorite,
-            })
-        } else {
-            addBookmark({
+        try {
+            const bookmarkData = {
                 url,
                 title,
                 description: description || undefined,
@@ -168,11 +159,22 @@ export function AddBookmarkDialog({
                 tags: selectedTagIds,
                 isFavorite,
                 favicon: getFaviconUrl(url),
-            })
-        }
+            }
 
-        onOpenChange(false)
-        resetForm()
+            if (isEditing && editBookmark) {
+                updateBookmark(editBookmark.id, bookmarkData)
+                toast.success('Bookmark updated')
+            } else {
+                addBookmark(bookmarkData)
+                toast.success('Bookmark added')
+            }
+
+            onOpenChange(false)
+            resetForm()
+        } catch (error) {
+            console.error('Failed to save bookmark:', error)
+            toast.error('Failed to save bookmark')
+        }
     }
 
     return (
