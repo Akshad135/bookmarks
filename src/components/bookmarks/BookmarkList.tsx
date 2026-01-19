@@ -13,7 +13,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { getDomainFromUrl, getFaviconUrl, formatDate, cn } from '@/lib/utils'
+import { getDomainFromUrl, getFaviconUrl, cn } from '@/lib/utils'
 import type { Bookmark } from '@/types'
 import {
     Heart,
@@ -53,7 +53,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
     return (
         <div
             className={cn(
-                'group flex items-center gap-2 md:gap-4 rounded-lg border border-border bg-card p-2 md:p-3 transition-all duration-200',
+                'group flex items-center gap-2 md:gap-4 rounded-lg border border-border bg-card p-2 md:p-3 transition-all duration-200 overflow-hidden',
                 'hover:border-primary/30 hover:bg-card/80'
             )}
         >
@@ -83,49 +83,49 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-                <h3
-                    className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
-                    onClick={handleOpenUrl}
-                >
-                    {bookmark.title}
-                </h3>
+                {/* Title and Tags Row */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    <h3
+                        className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                        onClick={handleOpenUrl}
+                    >
+                        {bookmark.title}
+                    </h3>
+                    {/* Tags next to title */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        {bookmarkTags.slice(0, 2).map((tag) => (
+                            <Badge
+                                key={tag.id}
+                                variant="secondary"
+                                className="text-xs"
+                                style={{
+                                    backgroundColor: `${tag.color}20`,
+                                    color: tag.color,
+                                }}
+                            >
+                                {tag.name}
+                            </Badge>
+                        ))}
+                        {bookmarkTags.length > 2 && (
+                            <Badge variant="secondary" className="text-xs">
+                                +{bookmarkTags.length - 2}
+                            </Badge>
+                        )}
+                    </div>
+                </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="truncate">{domain}</span>
-                    <span>•</span>
-                    <span className="shrink-0">{formatDate(bookmark.createdAt)}</span>
                 </div>
             </div>
 
-            {/* Tags */}
-            <div className="hidden lg:flex items-center gap-1.5 shrink-0">
-                {bookmarkTags.slice(0, 2).map((tag) => (
-                    <Badge
-                        key={tag.id}
-                        variant="secondary"
-                        className="text-xs"
-                        style={{
-                            backgroundColor: `${tag.color}20`,
-                            color: tag.color,
-                        }}
-                    >
-                        {tag.name}
-                    </Badge>
-                ))}
-                {bookmarkTags.length > 2 && (
-                    <Badge variant="secondary" className="text-xs">
-                        +{bookmarkTags.length - 2}
-                    </Badge>
-                )}
-            </div>
-
-            {/* Actions - always visible on mobile */}
-            <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            {/* Actions - always visible */}
+            <div className="flex items-center shrink-0">
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className={cn('h-8 w-8', bookmark.isFavorite && 'text-red-500')}
+                            className={cn('h-7 w-7 md:h-8 md:w-8', bookmark.isFavorite && 'text-red-500')}
                             onClick={() => toggleFavorite(bookmark.id)}
                         >
                             <Heart className={cn('h-4 w-4', bookmark.isFavorite && 'fill-current')} />
@@ -136,9 +136,23 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                     </TooltipContent>
                 </Tooltip>
 
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 md:h-8 md:w-8"
+                            onClick={handleOpenUrl}
+                        >
+                            <ExternalLink className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Open Link</TooltipContent>
+                </Tooltip>
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8">
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
