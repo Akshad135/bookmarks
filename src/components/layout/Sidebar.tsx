@@ -23,6 +23,7 @@ import {
     Trash2,
     Plus,
     Inbox,
+    X,
 } from 'lucide-react'
 
 const TAG_COLORS = [
@@ -38,9 +39,10 @@ const TAG_COLORS = [
 
 interface SidebarProps {
     isCollapsed: boolean
+    onCloseMobile?: () => void
 }
 
-export function Sidebar({ isCollapsed }: SidebarProps) {
+export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
     const {
         collections,
         tags,
@@ -119,6 +121,11 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
         }
     }
 
+    const handleNavClick = (id: string) => {
+        setActiveSection(id)
+        onCloseMobile?.()
+    }
+
     return (
         <>
             <aside
@@ -130,20 +137,33 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
                 {/* Header (Merged) */}
                 <div className={cn(
                     "flex h-20 items-center px-4 border-b border-sidebar-border/50",
-                    isCollapsed ? "justify-center" : "gap-3"
+                    isCollapsed ? "justify-center" : "justify-between"
                 )}>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-orange-400 shadow-sm">
-                        <Bookmark className="h-5 w-5 text-white fill-white/20" />
-                    </div>
-                    {!isCollapsed && (
-                        <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
-                            <span className="text-sm font-semibold text-sidebar-foreground truncate">
-                                Bookmarks
-                            </span>
-                            <span className="text-xs text-sidebar-muted truncate">
-                                Local Storage
-                            </span>
+                    <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-orange-400 shadow-sm">
+                            <Bookmark className="h-5 w-5 text-white fill-white/20" />
                         </div>
+                        {!isCollapsed && (
+                            <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
+                                <span className="text-sm font-semibold text-sidebar-foreground truncate">
+                                    Bookmarks
+                                </span>
+                                <span className="text-xs text-sidebar-muted truncate">
+                                    Local Storage
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    {/* Mobile close button */}
+                    {!isCollapsed && onCloseMobile && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="md:hidden h-8 w-8 text-sidebar-muted hover:text-sidebar-foreground"
+                            onClick={onCloseMobile}
+                        >
+                            <X className="h-5 w-5" />
+                        </Button>
                     )}
                 </div>
 
@@ -154,7 +174,7 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
                             <Button
                                 key={item.id}
                                 variant="ghost"
-                                onClick={() => setActiveSection(item.id)}
+                                onClick={() => handleNavClick(item.id)}
                                 className={cn(
                                     'w-full h-10 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
                                     activeSection === item.id && 'bg-sidebar-border text-sidebar-foreground',
@@ -206,7 +226,7 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
                                     <Button
                                         key={collection.id}
                                         variant="ghost"
-                                        onClick={() => setActiveSection(collection.id)}
+                                        onClick={() => handleNavClick(collection.id)}
                                         className={cn(
                                             'w-full h-9 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
                                             activeSection === collection.id && 'bg-sidebar-border text-sidebar-foreground',
@@ -229,7 +249,7 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
                                 ))}
                             <Button
                                 variant="ghost"
-                                onClick={() => setActiveSection('unsorted')}
+                                onClick={() => handleNavClick('unsorted')}
                                 className={cn(
                                     'w-full h-9 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
                                     activeSection === 'unsorted' && 'bg-sidebar-border text-sidebar-foreground',
@@ -313,7 +333,7 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
 
             {/* Add Collection Dialog */}
             <Dialog open={isAddCollectionOpen} onOpenChange={setIsAddCollectionOpen}>
-                <DialogContent className="sm:max-w-[400px]">
+                <DialogContent className="sm:max-w-[400px] max-w-[calc(100vw-2rem)]">
                     <DialogHeader>
                         <DialogTitle>New Collection</DialogTitle>
                         <DialogDescription>
@@ -336,11 +356,11 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
                             autoFocus
                         />
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddCollectionOpen(false)}>
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <Button variant="outline" onClick={() => setIsAddCollectionOpen(false)} className="w-full sm:w-auto">
                             Cancel
                         </Button>
-                        <Button onClick={handleAddCollection} disabled={!newCollectionName.trim()}>
+                        <Button onClick={handleAddCollection} disabled={!newCollectionName.trim()} className="w-full sm:w-auto">
                             Create Collection
                         </Button>
                     </DialogFooter>
@@ -349,7 +369,7 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
 
             {/* Add Tag Dialog */}
             <Dialog open={isAddTagOpen} onOpenChange={setIsAddTagOpen}>
-                <DialogContent className="sm:max-w-[400px]">
+                <DialogContent className="sm:max-w-[400px] max-w-[calc(100vw-2rem)]">
                     <DialogHeader>
                         <DialogTitle>New Tag</DialogTitle>
                         <DialogDescription>
@@ -403,11 +423,11 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddTagOpen(false)}>
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <Button variant="outline" onClick={() => setIsAddTagOpen(false)} className="w-full sm:w-auto">
                             Cancel
                         </Button>
-                        <Button onClick={handleAddTag} disabled={!newTagName.trim()}>
+                        <Button onClick={handleAddTag} disabled={!newTagName.trim()} className="w-full sm:w-auto">
                             Create Tag
                         </Button>
                     </DialogFooter>

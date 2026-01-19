@@ -98,3 +98,39 @@ body {
   background-color: var(--color-primary);
   color: var(--color-primary-foreground);
 }
+
+/* Mobile-specific styles */
+@media (max-width: 767px) {
+  /* Ensure minimum touch target sizes */
+  button, 
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Compact buttons can be smaller */
+  button.h-8,
+  button.h-9 {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  /* Safe area insets for notched devices */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent text selection on interactive elements for touch */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+

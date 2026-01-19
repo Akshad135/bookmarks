@@ -15,6 +15,7 @@ function App() {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
     const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
     const { viewMode } = useBookmarkStore()
 
     const handleAddBookmark = () => {
@@ -34,19 +35,49 @@ function App() {
         }
     }
 
+    const handleToggleSidebar = () => {
+        // On mobile, toggle the mobile sidebar overlay
+        if (window.innerWidth < 768) {
+            setIsMobileSidebarOpen(!isMobileSidebarOpen)
+        } else {
+            setIsSidebarCollapsed(!isSidebarCollapsed)
+        }
+    }
+
+    const closeMobileSidebar = () => {
+        setIsMobileSidebarOpen(false)
+    }
+
     return (
         <TooltipProvider delayDuration={300}>
-            <div className="flex h-screen bg-background">
-                {/* Sidebar */}
-                <Sidebar isCollapsed={isSidebarCollapsed} />
+            <div className="flex h-screen bg-background overflow-hidden">
+                {/* Mobile Sidebar Backdrop */}
+                {isMobileSidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+                        onClick={closeMobileSidebar}
+                    />
+                )}
+
+                {/* Sidebar - hidden on mobile by default, shown as overlay when open */}
+                <div className={`
+                    fixed inset-y-0 left-0 z-50 md:relative md:z-0
+                    transform transition-transform duration-300 ease-in-out
+                    ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                `}>
+                    <Sidebar
+                        isCollapsed={isSidebarCollapsed}
+                        onCloseMobile={closeMobileSidebar}
+                    />
+                </div>
 
                 {/* Main Content */}
-                <div className="flex flex-1 flex-col overflow-hidden">
+                <div className="flex flex-1 flex-col overflow-hidden min-w-0">
                     {/* Header */}
                     <Header
                         onAddBookmark={handleAddBookmark}
                         isSidebarCollapsed={isSidebarCollapsed}
-                        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                        onToggleSidebar={handleToggleSidebar}
                     />
 
                     {/* Content */}

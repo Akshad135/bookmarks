@@ -53,7 +53,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
     return (
         <div
             className={cn(
-                'group flex items-center gap-4 rounded-lg border border-border bg-card p-3 transition-all duration-200',
+                'group flex items-center gap-2 md:gap-4 rounded-lg border border-border bg-card p-2 md:p-3 transition-all duration-200',
                 'hover:border-primary/30 hover:bg-card/80'
             )}
         >
@@ -83,17 +83,12 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                    <h3
-                        className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
-                        onClick={handleOpenUrl}
-                    >
-                        {bookmark.title}
-                    </h3>
-                    {bookmark.isFavorite && (
-                        <Heart className="h-4 w-4 shrink-0 fill-red-500 text-red-500" />
-                    )}
-                </div>
+                <h3
+                    className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                    onClick={handleOpenUrl}
+                >
+                    {bookmark.title}
+                </h3>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="truncate">{domain}</span>
                     <span>•</span>
@@ -123,8 +118,8 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                 )}
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Actions - always visible on mobile */}
+            <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
@@ -287,9 +282,9 @@ export function BookmarkList({ onEditBookmark }: BookmarkListProps) {
 
     if (filteredBookmarks.length === 0) {
         return (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-12 text-center">
-                <div className="rounded-full bg-muted p-6">
-                    <Inbox className="h-12 w-12 text-muted-foreground" />
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 md:p-12 text-center">
+                <div className="rounded-full bg-muted p-4 md:p-6">
+                    <Inbox className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
                 </div>
                 <div>
                     <h3 className="text-lg font-medium">No bookmarks found</h3>
@@ -304,7 +299,7 @@ export function BookmarkList({ onEditBookmark }: BookmarkListProps) {
     }
 
     return (
-        <div className="flex flex-col gap-2 p-6">
+        <div className="flex flex-col gap-2 p-3 md:p-6">
             {filteredBookmarks.map((bookmark) => (
                 <BookmarkListItem
                     key={bookmark.id}

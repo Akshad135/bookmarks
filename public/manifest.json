@@ -1,0 +1,19 @@
+{
+    "name": "Bookmark Manager",
+    "short_name": "Bookmarks",
+    "description": "A sleek, modern bookmark manager to organize your web resources",
+    "theme_color": "#f97316",
+    "background_color": "#09090b",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

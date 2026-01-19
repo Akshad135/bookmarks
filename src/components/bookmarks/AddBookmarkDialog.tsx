@@ -188,7 +188,7 @@ export function AddBookmarkDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         {isEditing ? 'Edit Bookmark' : 'Add New Bookmark'}
@@ -350,15 +350,16 @@ export function AddBookmarkDialog({
                         </Label>
                     </div>
 
-                    <DialogFooter>
+                    <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => onOpenChange(false)}
+                            className="w-full sm:w-auto"
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={!url || !title || isLoading}>
+                        <Button type="submit" disabled={!url || !title || isLoading} className="w-full sm:w-auto">
                             {isEditing ? 'Save Changes' : 'Add Bookmark'}
                         </Button>
                     </DialogFooter>
