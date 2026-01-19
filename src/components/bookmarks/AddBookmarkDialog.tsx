@@ -261,7 +261,18 @@ export function AddBookmarkDialog({
                     {/* Thumbnail Preview */}
                     {thumbnail && (
                         <div className="space-y-2">
-                            <Label>Preview</Label>
+                            <div className="flex items-center justify-between">
+                                <Label>Preview Image</Label>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-auto p-0 text-xs text-destructive hover:bg-transparent hover:text-destructive"
+                                    onClick={() => setThumbnail('')}
+                                >
+                                    Remove image
+                                </Button>
+                            </div>
                             <div className="relative h-32 w-full overflow-hidden rounded-lg border border-border bg-secondary">
                                 <img
                                     src={thumbnail}

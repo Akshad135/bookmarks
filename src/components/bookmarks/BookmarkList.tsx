@@ -59,21 +59,21 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
         >
             {/* Favicon/Thumbnail */}
             <div
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-secondary cursor-pointer"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary cursor-pointer"
                 onClick={handleOpenUrl}
             >
-                {!imgError && bookmark.thumbnail ? (
-                    <img
-                        src={bookmark.thumbnail}
-                        alt=""
-                        className="h-full w-full rounded-lg object-cover"
-                        onError={() => setImgError(true)}
-                    />
-                ) : favicon && !imgError ? (
+                {favicon && !imgError ? (
                     <img
                         src={favicon}
                         alt=""
                         className="h-6 w-6"
+                        onError={() => setImgError(true)}
+                    />
+                ) : !imgError && bookmark.thumbnail ? (
+                    <img
+                        src={bookmark.thumbnail}
+                        alt=""
+                        className="h-full w-full rounded-lg object-cover"
                         onError={() => setImgError(true)}
                     />
                 ) : (

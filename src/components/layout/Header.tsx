@@ -25,6 +25,7 @@ import {
     SlidersHorizontal,
     X,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { SortOption } from '@/types'
 
 interface HeaderProps {
@@ -236,26 +237,32 @@ export function Header({ onAddBookmark }: HeaderProps) {
                                     </Button>
                                 )}
                             </div>
-                            <div className="space-y-1 max-h-48 overflow-y-auto">
-                                {tags.map((tag) => (
-                                    <div
-                                        key={tag.id}
-                                        className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent cursor-pointer"
-                                        onClick={() => toggleTag(tag.id)}
-                                    >
+                            <div className="space-y-1 max-h-48 overflow-y-auto pr-2">
+                                {tags.map((tag) => {
+                                    const isSelected = selectedTags.includes(tag.id)
+                                    return (
                                         <div
-                                            className="h-3 w-3 rounded-full"
-                                            style={{ backgroundColor: tag.color }}
-                                        />
-                                        <span className="flex-1 text-sm">{tag.name}</span>
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedTags.includes(tag.id)}
-                                            onChange={() => toggleTag(tag.id)}
-                                            className="h-4 w-4 rounded border-border"
-                                        />
-                                    </div>
-                                ))}
+                                            key={tag.id}
+                                            className={cn(
+                                                "flex items-center gap-3 py-2 px-2 rounded-md hover:bg-accent cursor-pointer transition-colors",
+                                                isSelected && "bg-accent"
+                                            )}
+                                            onClick={() => toggleTag(tag.id)}
+                                        >
+                                            <div className={cn(
+                                                "flex h-4 w-4 items-center justify-center rounded border border-primary/50",
+                                                isSelected ? "bg-primary border-primary" : "bg-transparent"
+                                            )}>
+                                                {isSelected && <div className="h-2 w-2 rounded-sm bg-primary-foreground" />}
+                                            </div>
+                                            <div
+                                                className="h-2 w-2 rounded-full"
+                                                style={{ backgroundColor: tag.color }}
+                                            />
+                                            <span className="flex-1 text-sm select-none">{tag.name}</span>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
                     </PopoverContent>
