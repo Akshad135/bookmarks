@@ -7,6 +7,7 @@ import { StatsCards } from '@/components/stats/StatsCards'
 import { BookmarkGrid } from '@/components/bookmarks/BookmarkGrid'
 import { BookmarkList } from '@/components/bookmarks/BookmarkList'
 import { AddBookmarkDialog } from '@/components/bookmarks/AddBookmarkDialog'
+import { LoginDialog } from '@/components/auth/LoginDialog'
 import { Toaster } from '@/components/ui/sonner'
 import { useBookmarkStore } from '@/store/bookmark-store'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
@@ -21,7 +22,7 @@ function App() {
     const { viewMode } = useBookmarkStore()
 
     // Initialize Supabase auth and realtime subscriptions
-    useSupabaseAuth()
+    const { user, isConfigured, isLoading, login } = useSupabaseAuth()
 
     // Handle Share Target API
     useEffect(() => {
@@ -142,6 +143,14 @@ function App() {
                     editBookmark={editingBookmark}
                     initialData={initialDialogData}
                 />
+
+                {/* Login Dialog - shown when Supabase is configured but user is not authenticated */}
+                <LoginDialog
+                    open={isConfigured && !isLoading && !user}
+                    onLogin={login}
+                    isLoading={isLoading}
+                />
+
                 <Toaster />
             </div>
         </TooltipProvider>

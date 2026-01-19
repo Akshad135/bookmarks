@@ -1,41 +1,11 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useBookmarkStore } from '@/store/bookmark-store'
 
 export function useSupabaseAuth() {
     const { fetchFromSupabase, setUser, user } = useBookmarkStore()
     const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
-
-    const handleMagicUrlLogin = useCallback(async () => {
-        if (!isSupabaseConfigured() || !supabase) return false
-
-        const hash = window.location.hash
-        if (!hash.startsWith('#login=')) return false
-
-        try {
-            const base64 = hash.substring(7) // Remove '#login='
-            const decoded = atob(base64)
-            const [email, password] = decoded.split(':')
-
-            if (!email || !password) {
-                console.error('Invalid login hash format')
-                return false
-            }
-
-            const { error } = await supabase.auth.signInWithPassword({ email, password })
-            if (error) {
-                console.error('Login failed:', error.message)
-                return false
-            }
-
-            // Clear the hash from URL
-            window.history.replaceState({}, '', window.location.pathname + window.location.search)
-            return true
-        } catch (e) {
-            console.error('Failed to parse login hash:', e)
-            return false
-        }
-    }, [])
+    const [isLoading, setIsLoading] = useState(true)
 
     const setupRealtimeSubscription = useCallback(() => {
         if (!isSupabaseConfigured() || !supabase) return
@@ -74,14 +44,28 @@ export function useSupabaseAuth() {
         subscriptionRef.current = channel
     }, [fetchFromSupabase])
 
+    const login = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
+        if (!isSupabaseConfigured() || !supabase) {
+            return { error: 'Supabase is not configured' }
+        }
+
+        try {
+            const { error } = await supabase.auth.signInWithPassword({ email, password })
+            if (error) {
+                return { error: error.message }
+            }
+            return { error: null }
+        } catch (e) {
+            return { error: 'An unexpected error occurred' }
+        }
+    }, [])
+
     const initializeAuth = useCallback(async () => {
         if (!isSupabaseConfigured() || !supabase) {
             setUser(null)
+            setIsLoading(false)
             return
         }
-
-        // Try magic URL login first
-        await handleMagicUrlLogin()
 
         // Get current session
         const { data: { session } } = await supabase.auth.getSession()
@@ -93,6 +77,8 @@ export function useSupabaseAuth() {
         } else {
             setUser(null)
         }
+
+        setIsLoading(false)
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -117,7 +103,7 @@ export function useSupabaseAuth() {
                 subscriptionRef.current.unsubscribe()
             }
         }
-    }, [handleMagicUrlLogin, setUser, fetchFromSupabase, setupRealtimeSubscription])
+    }, [setUser, fetchFromSupabase, setupRealtimeSubscription])
 
     useEffect(() => {
         const cleanup = initializeAuth()
@@ -126,5 +112,6 @@ export function useSupabaseAuth() {
         }
     }, [initializeAuth])
 
-    return { user, isConfigured: isSupabaseConfigured() }
+    return { user, isConfigured: isSupabaseConfigured(), isLoading, login }
 }
+
