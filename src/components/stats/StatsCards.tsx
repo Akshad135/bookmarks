@@ -33,18 +33,18 @@ export function StatsCards() {
     ]
 
     return (
-        <div className="grid grid-cols-4 gap-4 p-6">
+        <div className="grid grid-cols-4 gap-3 px-6 py-3">
             {stats.map((stat) => (
                 <Card
                     key={stat.label}
-                    className="flex items-center gap-4 border-border bg-card/50 p-4 transition-colors hover:bg-card"
+                    className="flex items-center gap-3 border-border bg-card/50 p-3 transition-colors hover:bg-card"
                 >
-                    <div className={`rounded-lg p-3 ${stat.color}`}>
-                        <stat.icon className="h-5 w-5" />
+                    <div className={`rounded-lg p-2 ${stat.color}`}>
+                        <stat.icon className="h-4 w-4" />
                     </div>
                     <div>
-                        <p className="text-2xl font-bold">{stat.value}</p>
-                        <p className="text-sm text-muted-foreground">{stat.label}</p>
+                        <p className="text-xl font-bold">{stat.value}</p>
+                        <p className="text-xs text-muted-foreground">{stat.label}</p>
                     </div>
                 </Card>
             ))}

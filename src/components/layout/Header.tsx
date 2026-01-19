@@ -119,7 +119,7 @@ export function Header({ onAddBookmark }: HeaderProps) {
     const hasActiveFilters = selectedTags.length > 0
 
     return (
-        <header className="flex h-16 items-center justify-between border-b border-border px-6">
+        <header className="flex h-20 items-center justify-between border-b border-border px-6">
             {/* Title */}
             <div className="flex items-center gap-4">
                 <div>
@@ -162,8 +162,8 @@ export function Header({ onAddBookmark }: HeaderProps) {
                         size="icon"
                         onClick={() => setViewMode('grid')}
                         className={`h-8 w-8 ${viewMode === 'grid'
-                                ? 'bg-background shadow-sm'
-                                : 'hover:bg-transparent'
+                            ? 'bg-background shadow-sm'
+                            : 'hover:bg-transparent'
                             }`}
                     >
                         <LayoutGrid className="h-4 w-4" />
@@ -173,8 +173,8 @@ export function Header({ onAddBookmark }: HeaderProps) {
                         size="icon"
                         onClick={() => setViewMode('list')}
                         className={`h-8 w-8 ${viewMode === 'list'
-                                ? 'bg-background shadow-sm'
-                                : 'hover:bg-transparent'
+                            ? 'bg-background shadow-sm'
+                            : 'hover:bg-transparent'
                             }`}
                     >
                         <List className="h-4 w-4" />
