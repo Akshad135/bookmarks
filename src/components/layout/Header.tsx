@@ -194,10 +194,12 @@ export function Header({ onAddBookmark, isSidebarCollapsed, onToggleSidebar }: H
                             variant="ghost"
                             size="icon"
                             onClick={() => setViewMode('grid')}
-                            className={`h-8 w-8 ${viewMode === 'grid'
-                                ? 'bg-background shadow-sm'
-                                : 'hover:bg-transparent'
-                                }`}
+                            className={cn(
+                                'h-8 w-8',
+                                viewMode === 'grid'
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:bg-transparent hover:text-foreground'
+                            )}
                         >
                             <LayoutGrid className="h-4 w-4" />
                         </Button>
@@ -205,10 +207,12 @@ export function Header({ onAddBookmark, isSidebarCollapsed, onToggleSidebar }: H
                             variant="ghost"
                             size="icon"
                             onClick={() => setViewMode('list')}
-                            className={`h-8 w-8 ${viewMode === 'list'
-                                ? 'bg-background shadow-sm'
-                                : 'hover:bg-transparent'
-                                }`}
+                            className={cn(
+                                'h-8 w-8',
+                                viewMode === 'list'
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:bg-transparent hover:text-foreground'
+                            )}
                         >
                             <List className="h-4 w-4" />
                         </Button>
