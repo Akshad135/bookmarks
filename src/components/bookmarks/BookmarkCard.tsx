@@ -119,22 +119,8 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                     </div>
                 )}
 
-                {/* Favorite Badge - Always visible if favorited */}
-                {bookmark.isFavorite && (
-                    <div className="absolute left-2 top-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm">
-                            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
-                        </div>
-                    </div>
-                )}
-
                 {/* Overlay Actions */}
-                <div
-                    className={cn(
-                        'absolute right-2 top-2 flex gap-1.5 transition-all duration-200',
-                        isHovered ? 'opacity-100' : 'opacity-0'
-                    )}
-                >
+                <div className="absolute right-2 top-2 flex gap-1.5">
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
@@ -239,37 +225,39 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                     {bookmark.description || domain}
                 </p>
 
-                {/* Tags */}
-                {bookmarkTags.length > 0 && (
-                    <div className="mt-auto flex flex-wrap gap-1.5">
-                        {bookmarkTags.slice(0, 3).map((tag) => (
-                            <Badge
-                                key={tag.id}
-                                variant="secondary"
-                                className="text-xs"
-                                style={{
-                                    backgroundColor: `${tag.color}20`,
-                                    color: tag.color,
-                                    borderColor: `${tag.color}40`,
-                                }}
-                            >
-                                {tag.name}
-                            </Badge>
-                        ))}
-                        {bookmarkTags.length > 3 && (
-                            <Badge variant="secondary" className="text-xs">
-                                +{bookmarkTags.length - 3}
-                            </Badge>
-                        )}
-                    </div>
-                )}
+                <div className="mt-auto">
+                    {/* Tags */}
+                    {bookmarkTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                            {bookmarkTags.slice(0, 3).map((tag) => (
+                                <Badge
+                                    key={tag.id}
+                                    variant="secondary"
+                                    className="text-xs"
+                                    style={{
+                                        backgroundColor: `${tag.color}20`,
+                                        color: tag.color,
+                                        borderColor: `${tag.color}40`,
+                                    }}
+                                >
+                                    {tag.name}
+                                </Badge>
+                            ))}
+                            {bookmarkTags.length > 3 && (
+                                <Badge variant="secondary" className="text-xs">
+                                    +{bookmarkTags.length - 3}
+                                </Badge>
+                            )}
+                        </div>
+                    )}
 
-                {/* Footer */}
-                <div className="mt-3 flex items-center justify-between pt-3 border-t border-border">
-                    <span className="text-xs text-muted-foreground">{domain}</span>
-                    <span className="text-xs text-muted-foreground">
-                        {formatDate(bookmark.createdAt)}
-                    </span>
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <span className="text-xs text-muted-foreground">{domain}</span>
+                        <span className="text-xs text-muted-foreground">
+                            {formatDate(bookmark.createdAt)}
+                        </span>
+                    </div>
                 </div>
             </div>
         </Card>

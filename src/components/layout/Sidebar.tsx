@@ -36,7 +36,11 @@ const TAG_COLORS = [
     '#ec4899', // pink
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+    isCollapsed: boolean
+}
+
+export function Sidebar({ isCollapsed }: SidebarProps) {
     const {
         collections,
         tags,
@@ -117,34 +121,54 @@ export function Sidebar() {
 
     return (
         <>
-            <aside className="flex h-screen w-[17rem] flex-col border-r border-sidebar-border bg-sidebar">
-                {/* Logo */}
-                <div className="flex h-16 items-center gap-3 px-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                        <Bookmark className="h-5 w-5 text-primary-foreground" />
+            <aside
+                className={cn(
+                    "flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
+                    isCollapsed ? "w-20" : "w-[17rem]"
+                )}
+            >
+                {/* Header (Merged) */}
+                <div className={cn(
+                    "flex h-20 items-center px-4 border-b border-sidebar-border/50",
+                    isCollapsed ? "justify-center" : "gap-3"
+                )}>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-orange-400 shadow-sm">
+                        <Bookmark className="h-5 w-5 text-white fill-white/20" />
                     </div>
-                    <span className="text-lg font-semibold text-sidebar-foreground">
-                        Bookmarks
-                    </span>
+                    {!isCollapsed && (
+                        <div className="flex flex-col min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
+                            <span className="text-sm font-semibold text-sidebar-foreground truncate">
+                                Bookmarks
+                            </span>
+                            <span className="text-xs text-sidebar-muted truncate">
+                                Local Storage
+                            </span>
+                        </div>
+                    )}
                 </div>
 
-                <ScrollArea className="flex-1 px-2 py-2">
+                <ScrollArea className="flex-1 px-3 py-4">
                     {/* Main Navigation */}
-                    <div className="space-y-1 pb-4">
+                    <div className="space-y-1.5 pb-6">
                         {navItems.map((item) => (
                             <Button
                                 key={item.id}
                                 variant="ghost"
                                 onClick={() => setActiveSection(item.id)}
                                 className={cn(
-                                    'w-full justify-start gap-3 px-3 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
-                                    activeSection === item.id &&
-                                    'bg-sidebar-border text-sidebar-foreground'
+                                    'w-full h-10 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
+                                    activeSection === item.id && 'bg-sidebar-border text-sidebar-foreground',
+                                    isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
                                 )}
+                                title={isCollapsed ? item.label : undefined}
                             >
-                                <item.icon className="h-4 w-4" />
-                                <span className="flex-1 text-left text-sm">{item.label}</span>
-                                <span className="text-xs text-sidebar-muted">{item.count}</span>
+                                <item.icon className="h-5 w-5 shrink-0" />
+                                {!isCollapsed && (
+                                    <>
+                                        <span className="flex-1 text-left text-sm truncate">{item.label}</span>
+                                        <span className="text-xs text-sidebar-muted">{item.count}</span>
+                                    </>
+                                )}
                             </Button>
                         ))}
                     </div>
@@ -152,21 +176,30 @@ export function Sidebar() {
                     <Separator className="my-2 bg-sidebar-border" />
 
                     {/* Collections */}
-                    <div className="py-2">
-                        <div className="flex items-center justify-between px-3 py-2">
-                            <span className="text-xs font-medium uppercase tracking-wider text-sidebar-muted">
-                                Collections
-                            </span>
+                    <div className="py-4">
+                        <div className={cn(
+                            "flex items-center mb-1 text-sidebar-muted",
+                            isCollapsed ? "justify-center" : "justify-between px-3 py-2"
+                        )}>
+                            {!isCollapsed && (
+                                <span className="text-xs font-semibold uppercase tracking-wider">
+                                    Collections
+                                </span>
+                            )}
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 text-sidebar-muted hover:text-sidebar-foreground"
+                                className={cn(
+                                    "text-sidebar-muted hover:text-sidebar-foreground",
+                                    isCollapsed ? "h-8 w-8" : "h-6 w-6"
+                                )}
                                 onClick={() => setIsAddCollectionOpen(true)}
+                                title="Add Collection"
                             >
-                                <Plus className="h-3.5 w-3.5" />
+                                <Plus className={cn("transition-all", isCollapsed ? "h-5 w-5" : "h-3.5 w-3.5")} />
                             </Button>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                             {collections
                                 .filter((c) => !c.isSystem)
                                 .map((collection) => (
@@ -175,34 +208,44 @@ export function Sidebar() {
                                         variant="ghost"
                                         onClick={() => setActiveSection(collection.id)}
                                         className={cn(
-                                            'w-full justify-start gap-3 px-3 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
-                                            activeSection === collection.id &&
-                                            'bg-sidebar-border text-sidebar-foreground'
+                                            'w-full h-9 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
+                                            activeSection === collection.id && 'bg-sidebar-border text-sidebar-foreground',
+                                            isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
                                         )}
+                                        title={isCollapsed ? collection.name : undefined}
                                     >
-                                        <FolderOpen className="h-4 w-4" />
-                                        <span className="flex-1 text-left text-sm truncate">
-                                            {collection.name}
-                                        </span>
-                                        <span className="text-xs text-sidebar-muted">
-                                            {getCollectionCount(collection.id)}
-                                        </span>
+                                        <FolderOpen className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
+                                        {!isCollapsed && (
+                                            <>
+                                                <span className="flex-1 text-left text-sm truncate">
+                                                    {collection.name}
+                                                </span>
+                                                <span className="text-xs text-sidebar-muted">
+                                                    {getCollectionCount(collection.id)}
+                                                </span>
+                                            </>
+                                        )}
                                     </Button>
                                 ))}
                             <Button
                                 variant="ghost"
                                 onClick={() => setActiveSection('unsorted')}
                                 className={cn(
-                                    'w-full justify-start gap-3 px-3 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
-                                    activeSection === 'unsorted' &&
-                                    'bg-sidebar-border text-sidebar-foreground'
+                                    'w-full h-9 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
+                                    activeSection === 'unsorted' && 'bg-sidebar-border text-sidebar-foreground',
+                                    isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
                                 )}
+                                title={isCollapsed ? "Unsorted" : undefined}
                             >
-                                <Inbox className="h-4 w-4" />
-                                <span className="flex-1 text-left text-sm">Unsorted</span>
-                                <span className="text-xs text-sidebar-muted">
-                                    {getCollectionCount('unsorted')}
-                                </span>
+                                <Inbox className="h-4 w-4 shrink-0" />
+                                {!isCollapsed && (
+                                    <>
+                                        <span className="flex-1 text-left text-sm">Unsorted</span>
+                                        <span className="text-xs text-sidebar-muted">
+                                            {getCollectionCount('unsorted')}
+                                        </span>
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -210,60 +253,62 @@ export function Sidebar() {
                     <Separator className="my-2 bg-sidebar-border" />
 
                     {/* Tags */}
-                    <div className="py-2">
-                        <div className="flex items-center justify-between px-3 py-2">
-                            <span className="text-xs font-medium uppercase tracking-wider text-sidebar-muted">
-                                Tags
-                            </span>
+                    <div className="py-4">
+                        <div className={cn(
+                            "flex items-center mb-1 text-sidebar-muted",
+                            isCollapsed ? "justify-center" : "justify-between px-3 py-2"
+                        )}>
+                            {!isCollapsed && (
+                                <span className="text-xs font-semibold uppercase tracking-wider">
+                                    Tags
+                                </span>
+                            )}
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 text-sidebar-muted hover:text-sidebar-foreground"
+                                className={cn(
+                                    "text-sidebar-muted hover:text-sidebar-foreground",
+                                    isCollapsed ? "h-8 w-8" : "h-6 w-6"
+                                )}
                                 onClick={() => setIsAddTagOpen(true)}
+                                title="Add Tag"
                             >
-                                <Plus className="h-3.5 w-3.5" />
+                                <Plus className={cn("transition-all", isCollapsed ? "h-5 w-5" : "h-3.5 w-3.5")} />
                             </Button>
                         </div>
-                        <div className="space-y-1 px-1">
+                        <div className="space-y-1.5 px-0.5">
                             {tags.map((tag) => (
                                 <Button
                                     key={tag.id}
                                     variant="ghost"
                                     onClick={() => toggleTag(tag.id)}
                                     className={cn(
-                                        'w-full justify-start gap-3 px-3 h-9 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground',
-                                        selectedTags.includes(tag.id) && 'bg-sidebar-border text-sidebar-foreground'
+                                        'w-full h-9 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
+                                        selectedTags.includes(tag.id) && 'bg-sidebar-border text-sidebar-foreground',
+                                        isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
                                     )}
+                                    title={isCollapsed ? tag.name : undefined}
                                 >
                                     <div
-                                        className="h-3 w-3 rounded-full ring-1 ring-white/10"
+                                        className="h-3 w-3 shrink-0 rounded-full ring-1 ring-white/10"
                                         style={{ backgroundColor: tag.color }}
                                     />
-                                    <span className="flex-1 text-left text-sm">{tag.name}</span>
-                                    <Badge
-                                        variant="secondary"
-                                        className="h-5 min-w-[1.25rem] justify-center px-1.5 text-xs"
-                                    >
-                                        {getTagCount(tag.id)}
-                                    </Badge>
+                                    {!isCollapsed && (
+                                        <>
+                                            <span className="flex-1 text-left text-sm">{tag.name}</span>
+                                            <Badge
+                                                variant="secondary"
+                                                className="h-5 min-w-[1.25rem] justify-center px-1.5 text-xs"
+                                            >
+                                                {getTagCount(tag.id)}
+                                            </Badge>
+                                        </>
+                                    )}
                                 </Button>
                             ))}
                         </div>
                     </div>
                 </ScrollArea>
-
-                {/* Footer */}
-                <div className="border-t border-sidebar-border p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-orange-400" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-sidebar-foreground truncate">
-                                My Bookmarks
-                            </p>
-                            <p className="text-xs text-sidebar-muted">Local Storage</p>
-                        </div>
-                    </div>
-                </div>
             </aside>
 
             {/* Add Collection Dialog */}

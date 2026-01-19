@@ -96,12 +96,13 @@ export function AddBookmarkDialog({
         }
     }
 
-    const handleFetchMetadata = async () => {
-        if (!url) return
+    const handleFetchMetadata = async (urlOverride?: string) => {
+        const targetUrl = urlOverride || url
+        if (!targetUrl) return
 
         // Validate URL
         try {
-            new URL(url)
+            new URL(targetUrl)
         } catch {
             setFetchError('Please enter a valid URL')
             return
@@ -111,7 +112,7 @@ export function AddBookmarkDialog({
         setFetchError('')
 
         try {
-            const metadata = await fetchMetadata(url)
+            const metadata = await fetchMetadata(targetUrl)
 
             if (metadata) {
                 if (!title && metadata.title) setTitle(metadata.title)
@@ -131,8 +132,16 @@ export function AddBookmarkDialog({
     }
 
     const handleUrlBlur = () => {
-        if (url && !title) {
-            handleFetchMetadata()
+        if (url) {
+            let normalizedUrl = url
+            if (!/^https?:\/\//i.test(url)) {
+                normalizedUrl = `https://${url}`
+                setUrl(normalizedUrl)
+            }
+
+            if (!title) {
+                handleFetchMetadata(normalizedUrl)
+            }
         }
     }
 
@@ -213,7 +222,7 @@ export function AddBookmarkDialog({
                                 type="button"
                                 variant="outline"
                                 size="icon"
-                                onClick={handleFetchMetadata}
+                                onClick={() => handleFetchMetadata()}
                                 disabled={!url || isLoading}
                                 className="shrink-0"
                                 title="Fetch metadata"

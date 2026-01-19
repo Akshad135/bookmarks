@@ -23,16 +23,19 @@ import {
     List,
     ArrowUpDown,
     SlidersHorizontal,
-    X,
+    Platform,
+    PanelLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SortOption } from '@/types'
 
 interface HeaderProps {
     onAddBookmark: () => void
+    isSidebarCollapsed: boolean
+    onToggleSidebar: () => void
 }
 
-export function Header({ onAddBookmark }: HeaderProps) {
+export function Header({ onAddBookmark, isSidebarCollapsed, onToggleSidebar }: HeaderProps) {
     const {
         viewMode,
         setViewMode,
@@ -120,9 +123,17 @@ export function Header({ onAddBookmark }: HeaderProps) {
     const hasActiveFilters = selectedTags.length > 0
 
     return (
-        <header className="flex h-20 items-center justify-between border-b border-border px-6">
+        <header className="flex h-20 items-center justify-between border-b border-border px-6 transition-all duration-300">
             {/* Title */}
             <div className="flex items-center gap-4">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onToggleSidebar}
+                    className="mr-2 text-muted-foreground hover:text-foreground"
+                >
+                    <PanelLeft className={cn("h-5 w-5 transition-transform", isSidebarCollapsed && "rotate-180")} />
+                </Button>
                 <div>
                     <h1 className="text-xl font-semibold">{getTitle()}</h1>
                     <p className="text-sm text-muted-foreground">{getCount()} bookmarks</p>

@@ -14,6 +14,7 @@ import type { Bookmark } from '@/types'
 function App() {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
     const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const { viewMode } = useBookmarkStore()
 
     const handleAddBookmark = () => {
@@ -37,12 +38,16 @@ function App() {
         <TooltipProvider delayDuration={300}>
             <div className="flex h-screen bg-background">
                 {/* Sidebar */}
-                <Sidebar />
+                <Sidebar isCollapsed={isSidebarCollapsed} />
 
                 {/* Main Content */}
                 <div className="flex flex-1 flex-col overflow-hidden">
                     {/* Header */}
-                    <Header onAddBookmark={handleAddBookmark} />
+                    <Header
+                        onAddBookmark={handleAddBookmark}
+                        isSidebarCollapsed={isSidebarCollapsed}
+                        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    />
 
                     {/* Content */}
                     <ScrollArea className="flex-1">
