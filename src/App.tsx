@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -14,17 +14,53 @@ import type { Bookmark } from '@/types'
 function App() {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
     const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null)
+    const [initialDialogData, setInitialDialogData] = useState<Partial<Bookmark> | null>(null)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
     const { viewMode } = useBookmarkStore()
 
+    // Handle Share Target API
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const title = params.get('title')
+        const text = params.get('text')
+        const url = params.get('url')
+
+        if (title || text || url) {
+            // Extract URL from text if url param is empty (common in some apps)
+            let finalUrl = url || ''
+            if (!finalUrl && text) {
+                // Simple regex to extract URL from text
+                const urlMatch = text.match(/(https?:\/\/[^\s]+)/g)
+                if (urlMatch) {
+                    finalUrl = urlMatch[0]
+                }
+            }
+
+            // Remove shared params from URL to prevent reopening on refresh
+            const newUrl = window.location.pathname
+            window.history.replaceState({}, '', newUrl)
+
+            if (finalUrl) {
+                setInitialDialogData({
+                    title: title || '',
+                    url: finalUrl,
+                    description: text !== finalUrl ? text : '', // Use text as description if it's not just the URL
+                })
+                setIsAddDialogOpen(true)
+            }
+        }
+    }, [])
+
     const handleAddBookmark = () => {
         setEditingBookmark(null)
+        setInitialDialogData(null)
         setIsAddDialogOpen(true)
     }
 
     const handleEditBookmark = (bookmark: Bookmark) => {
         setEditingBookmark(bookmark)
+        setInitialDialogData(null)
         setIsAddDialogOpen(true)
     }
 
@@ -32,6 +68,7 @@ function App() {
         setIsAddDialogOpen(open)
         if (!open) {
             setEditingBookmark(null)
+            setInitialDialogData(null)
         }
     }
 
@@ -99,6 +136,7 @@ function App() {
                     open={isAddDialogOpen}
                     onOpenChange={handleDialogClose}
                     editBookmark={editingBookmark}
+                    initialData={initialDialogData}
                 />
                 <Toaster />
             </div>

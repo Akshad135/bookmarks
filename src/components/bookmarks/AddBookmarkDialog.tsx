@@ -5,7 +5,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
-    DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,15 +12,16 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { getFaviconUrl } from '@/lib/utils'
+import { getFaviconUrl, cn } from '@/lib/utils'
 import type { Bookmark } from '@/types'
 import { toast } from 'sonner'
-import { Loader2, Link, Tag, Globe, Sparkles } from 'lucide-react'
+import { Loader2, Link, Tag, Globe, Sparkles, Heart, Plus } from 'lucide-react'
 
 interface AddBookmarkDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     editBookmark?: Bookmark | null
+    initialData?: Partial<Bookmark> | null
 }
 
 interface UrlMetadata {
@@ -34,6 +34,7 @@ export function AddBookmarkDialog({
     open,
     onOpenChange,
     editBookmark,
+    initialData,
 }: AddBookmarkDialogProps) {
     const { addBookmark, updateBookmark, tags, collections } = useBookmarkStore()
 
@@ -58,10 +59,18 @@ export function AddBookmarkDialog({
             setCollectionId(editBookmark.collectionId)
             setSelectedTagIds(editBookmark.tags)
             setIsFavorite(editBookmark.isFavorite)
+        } else if (initialData) {
+            setUrl(initialData.url || '')
+            setTitle(initialData.title || '')
+            setDescription(initialData.description || '')
+            setThumbnail(initialData.thumbnail || '')
+            setCollectionId(initialData.collectionId || 'unsorted')
+            setSelectedTagIds(initialData.tags || [])
+            setIsFavorite(initialData.isFavorite || false)
         } else {
             resetForm()
         }
-    }, [editBookmark, open])
+    }, [editBookmark, initialData, open])
 
     const resetForm = () => {
         setUrl('')
@@ -91,7 +100,6 @@ export function AddBookmarkDialog({
             }
             return null
         } catch {
-            // If the API fails, try to extract basic info from URL
             return null
         }
     }
@@ -100,7 +108,6 @@ export function AddBookmarkDialog({
         const targetUrl = urlOverride || url
         if (!targetUrl) return
 
-        // Validate URL
         try {
             new URL(targetUrl)
         } catch {
@@ -119,7 +126,6 @@ export function AddBookmarkDialog({
                 if (!description && metadata.description) setDescription(metadata.description)
                 if (!thumbnail && metadata.image) setThumbnail(metadata.image)
             } else {
-                // Fallback: extract from URL
                 const urlObj = new URL(url)
                 const hostname = urlObj.hostname.replace('www.', '')
                 if (!title) setTitle(hostname)
@@ -188,21 +194,21 @@ export function AddBookmarkDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[500px] max-w-[calc(100vw-1rem)] w-full max-h-[85vh] overflow-y-auto p-4 md:p-5 gap-4">
                 <DialogHeader>
-                    <DialogTitle>
+                    <DialogTitle className="text-lg md:text-xl">
                         {isEditing ? 'Edit Bookmark' : 'Add New Bookmark'}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditing
                             ? 'Update the bookmark details below.'
-                            : 'Paste a URL and we\'ll fetch the details automatically.'}
+                            : 'Fill in the details for your new bookmark.'}
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     {/* URL */}
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <Label htmlFor="url">URL</Label>
                         <div className="flex gap-2">
                             <div className="relative flex-1">
@@ -214,7 +220,7 @@ export function AddBookmarkDialog({
                                     value={url}
                                     onChange={(e) => setUrl(e.target.value)}
                                     onBlur={handleUrlBlur}
-                                    className="pl-9"
+                                    className="pl-9 h-11"
                                     required
                                 />
                             </div>
@@ -224,7 +230,7 @@ export function AddBookmarkDialog({
                                 size="icon"
                                 onClick={() => handleFetchMetadata()}
                                 disabled={!url || isLoading}
-                                className="shrink-0"
+                                className="shrink-0 h-11 w-11"
                                 title="Fetch metadata"
                             >
                                 {isLoading ? (
@@ -240,7 +246,7 @@ export function AddBookmarkDialog({
                     </div>
 
                     {/* Title */}
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <Label htmlFor="title">Title</Label>
                         <div className="relative">
                             <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -249,14 +255,14 @@ export function AddBookmarkDialog({
                                 placeholder="Bookmark title"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="pl-9"
+                                className="pl-9 h-11"
                                 required
                             />
                         </div>
                     </div>
 
                     {/* Description */}
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <Label htmlFor="description">Description (optional)</Label>
                         <Textarea
                             id="description"
@@ -264,25 +270,26 @@ export function AddBookmarkDialog({
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={2}
+                            className="resize-none"
                         />
                     </div>
 
                     {/* Thumbnail Preview */}
                     {thumbnail && (
-                        <div className="space-y-2">
+                        <div className="space-y-2 rounded-md border border-border p-2">
                             <div className="flex items-center justify-between">
-                                <Label>Preview Image</Label>
+                                <Label className="text-xs">Preview Image</Label>
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="h-auto p-0 text-xs text-destructive hover:bg-transparent hover:text-destructive"
+                                    className="h-6 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                                     onClick={() => setThumbnail('')}
                                 >
-                                    Remove image
+                                    Remove
                                 </Button>
                             </div>
-                            <div className="relative h-32 w-full overflow-hidden rounded-lg border border-border bg-secondary">
+                            <div className="relative h-28 w-full overflow-hidden rounded-md bg-secondary">
                                 <img
                                     src={thumbnail}
                                     alt="Preview"
@@ -293,76 +300,92 @@ export function AddBookmarkDialog({
                         </div>
                     )}
 
-                    {/* Collection */}
-                    <div className="space-y-2">
-                        <Label>Collection</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {collections.map((collection) => (
-                                <Badge
-                                    key={collection.id}
-                                    variant={collectionId === collection.id ? 'default' : 'secondary'}
-                                    className="cursor-pointer transition-all hover:scale-105"
-                                    onClick={() => setCollectionId(collection.id)}
-                                >
-                                    {collection.name}
-                                </Badge>
-                            ))}
+                    <div className="flex flex-col gap-4">
+                        {/* Collection */}
+                        <div className="flex flex-col gap-2">
+                            <Label>Collection</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {collections
+                                    .filter(c => c.id !== 'all')
+                                    .map((collection) => (
+                                        <Badge
+                                            key={collection.id}
+                                            variant={collectionId === collection.id ? 'default' : 'outline'}
+                                            className={cn(
+                                                "cursor-pointer px-3 py-1 text-sm font-normal transition-all hover:bg-secondary",
+                                                collectionId === collection.id && "hover:bg-primary"
+                                            )}
+                                            onClick={() => setCollectionId(collection.id)}
+                                        >
+                                            {collection.name}
+                                        </Badge>
+                                    ))}
+                            </div>
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex flex-col gap-2">
+                            <Label className="flex items-center gap-2">
+                                <Tag className="h-3.5 w-3.5" />
+                                Tags
+                            </Label>
+                            <div className="flex flex-wrap gap-2">
+                                {tags.map((tag) => (
+                                    <Badge
+                                        key={tag.id}
+                                        variant={selectedTagIds.includes(tag.id) ? 'default' : 'outline'}
+                                        className="cursor-pointer px-2 py-1 font-normal transition-all hover:bg-secondary"
+                                        style={selectedTagIds.includes(tag.id) ? {
+                                            backgroundColor: tag.color,
+                                            color: '#fff',
+                                            borderColor: tag.color
+                                        } : {
+                                            borderColor: `${tag.color}40`,
+                                            color: tag.color
+                                        }}
+                                        onClick={() => toggleTagSelection(tag.id)}
+                                    >
+                                        {tag.name}
+                                    </Badge>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Tags */}
-                    <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                            <Tag className="h-4 w-4" />
-                            Tags
-                        </Label>
-                        <div className="flex flex-wrap gap-2">
-                            {tags.map((tag) => (
-                                <Badge
-                                    key={tag.id}
-                                    variant={selectedTagIds.includes(tag.id) ? 'default' : 'secondary'}
-                                    className="cursor-pointer transition-all hover:scale-105"
-                                    style={{
-                                        backgroundColor: selectedTagIds.includes(tag.id)
-                                            ? tag.color
-                                            : undefined,
-                                        borderColor: tag.color,
-                                    }}
-                                    onClick={() => toggleTagSelection(tag.id)}
-                                >
-                                    {tag.name}
-                                </Badge>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Favorite Toggle */}
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id="favorite"
-                            checked={isFavorite}
-                            onChange={(e) => setIsFavorite(e.target.checked)}
-                            className="h-4 w-4 rounded border-border"
-                        />
-                        <Label htmlFor="favorite" className="cursor-pointer">
-                            Add to Favorites
-                        </Label>
-                    </div>
-
-                    <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+                    {/* Favorite Toggle & Actions */}
+                    <div className="flex flex-col gap-4">
                         <Button
                             type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            className="w-full sm:w-auto"
+                            variant={isFavorite ? "secondary" : "outline"}
+                            className={cn("w-full justify-between items-center group", isFavorite && "bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-200")}
+                            onClick={() => setIsFavorite(!isFavorite)}
                         >
-                            Cancel
+                            <span className="flex items-center gap-2">
+                                <Heart className={cn("h-4 w-4", isFavorite ? "fill-current" : "group-hover:text-red-500")} />
+                                Add to Favorites
+                            </span>
+                            {isFavorite && <Badge variant="secondary" className="bg-red-500 text-white text-[10px] h-5">Selected</Badge>}
                         </Button>
-                        <Button type="submit" disabled={!url || !title || isLoading} className="w-full sm:w-auto">
-                            {isEditing ? 'Save Changes' : 'Add Bookmark'}
-                        </Button>
-                    </DialogFooter>
+
+                        <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => onOpenChange(false)}
+                                className="w-full sm:w-auto"
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={!url || !title || isLoading} className="w-full gap-2">
+                                {isEditing ? 'Save Changes' : (
+                                    <>
+                                        <Plus className="h-4 w-4" />
+                                        Add Bookmark
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
                 </form>
             </DialogContent>
         </Dialog>
