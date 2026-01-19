@@ -1,11 +1,110 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { useBookmarkStore } from '@/store/bookmark-store'
+import { useBookmarkStore, toCamelCase } from '@/store/bookmark-store'
+import type { Bookmark, Collection, Tag } from '@/types'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 export function useSupabaseAuth() {
-    const { fetchFromSupabase, setUser, user } = useBookmarkStore()
+    const {
+        fetchFromSupabase,
+        setUser,
+        user,
+        addBookmarkFromRemote,
+        updateBookmarkFromRemote,
+        deleteBookmarkFromRemote,
+        addCollectionFromRemote,
+        updateCollectionFromRemote,
+        deleteCollectionFromRemote,
+        addTagFromRemote,
+        updateTagFromRemote,
+        deleteTagFromRemote,
+    } = useBookmarkStore()
     const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+
+    // Handle incremental bookmark changes from realtime events
+    const handleBookmarkChange = useCallback(
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+            const { eventType } = payload
+
+            switch (eventType) {
+                case 'INSERT':
+                    if (payload.new && typeof payload.new === 'object') {
+                        const bookmark = toCamelCase<Bookmark>(payload.new as Record<string, unknown>)
+                        addBookmarkFromRemote(bookmark)
+                    }
+                    break
+                case 'UPDATE':
+                    if (payload.new && typeof payload.new === 'object') {
+                        const bookmark = toCamelCase<Bookmark>(payload.new as Record<string, unknown>)
+                        updateBookmarkFromRemote(bookmark.id, bookmark)
+                    }
+                    break
+                case 'DELETE':
+                    if (payload.old && typeof payload.old === 'object' && 'id' in payload.old) {
+                        deleteBookmarkFromRemote(payload.old.id as string)
+                    }
+                    break
+            }
+        },
+        [addBookmarkFromRemote, updateBookmarkFromRemote, deleteBookmarkFromRemote]
+    )
+
+    // Handle incremental collection changes from realtime events
+    const handleCollectionChange = useCallback(
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+            const { eventType } = payload
+
+            switch (eventType) {
+                case 'INSERT':
+                    if (payload.new && typeof payload.new === 'object') {
+                        const collection = toCamelCase<Collection>(payload.new as Record<string, unknown>)
+                        addCollectionFromRemote(collection)
+                    }
+                    break
+                case 'UPDATE':
+                    if (payload.new && typeof payload.new === 'object') {
+                        const collection = toCamelCase<Collection>(payload.new as Record<string, unknown>)
+                        updateCollectionFromRemote(collection.id, collection)
+                    }
+                    break
+                case 'DELETE':
+                    if (payload.old && typeof payload.old === 'object' && 'id' in payload.old) {
+                        deleteCollectionFromRemote(payload.old.id as string)
+                    }
+                    break
+            }
+        },
+        [addCollectionFromRemote, updateCollectionFromRemote, deleteCollectionFromRemote]
+    )
+
+    // Handle incremental tag changes from realtime events
+    const handleTagChange = useCallback(
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+            const { eventType } = payload
+
+            switch (eventType) {
+                case 'INSERT':
+                    if (payload.new && typeof payload.new === 'object') {
+                        const tag = toCamelCase<Tag>(payload.new as Record<string, unknown>)
+                        addTagFromRemote(tag)
+                    }
+                    break
+                case 'UPDATE':
+                    if (payload.new && typeof payload.new === 'object') {
+                        const tag = toCamelCase<Tag>(payload.new as Record<string, unknown>)
+                        updateTagFromRemote(tag.id, tag)
+                    }
+                    break
+                case 'DELETE':
+                    if (payload.old && typeof payload.old === 'object' && 'id' in payload.old) {
+                        deleteTagFromRemote(payload.old.id as string)
+                    }
+                    break
+            }
+        },
+        [addTagFromRemote, updateTagFromRemote, deleteTagFromRemote]
+    )
 
     const setupRealtimeSubscription = useCallback(() => {
         if (!isSupabaseConfigured() || !supabase) return
@@ -20,29 +119,22 @@ export function useSupabaseAuth() {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'bookmarks' },
-                () => {
-                    // Refetch all data on any change from another device
-                    fetchFromSupabase()
-                }
+                handleBookmarkChange
             )
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'collections' },
-                () => {
-                    fetchFromSupabase()
-                }
+                handleCollectionChange
             )
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'tags' },
-                () => {
-                    fetchFromSupabase()
-                }
+                handleTagChange
             )
             .subscribe()
 
         subscriptionRef.current = channel
-    }, [fetchFromSupabase])
+    }, [handleBookmarkChange, handleCollectionChange, handleTagChange])
 
     const login = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
         if (!isSupabaseConfigured() || !supabase) {
@@ -114,4 +206,3 @@ export function useSupabaseAuth() {
 
     return { user, isConfigured: isSupabaseConfigured(), isLoading, login }
 }
-

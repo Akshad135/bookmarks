@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { get, set, del } from 'idb-keyval'
 import type { Bookmark, Collection, Tag, ViewMode, SortOption, FilterSection } from '@/types'
 import { generateId } from '@/lib/utils'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
@@ -15,8 +16,8 @@ const toSnakeCase = (obj: Record<string, unknown>): Record<string, unknown> => {
     return result
 }
 
-// Helper to convert snake_case to camelCase from DB
-const toCamelCase = <T>(obj: Record<string, unknown>): T => {
+// Helper to convert snake_case to camelCase from DB (exported for use in hooks)
+export const toCamelCase = <T>(obj: Record<string, unknown>): T => {
     const result: Record<string, unknown> = {}
     for (const key in obj) {
         const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
@@ -71,6 +72,17 @@ interface BookmarkState {
     setSearchQuery: (query: string) => void
     setSelectedTags: (tags: string[]) => void
     toggleTag: (tagId: string) => void
+
+    // Incremental sync actions (for realtime updates from other devices)
+    addBookmarkFromRemote: (bookmark: Bookmark) => void
+    updateBookmarkFromRemote: (id: string, bookmark: Bookmark) => void
+    deleteBookmarkFromRemote: (id: string) => void
+    addCollectionFromRemote: (collection: Collection) => void
+    updateCollectionFromRemote: (id: string, collection: Collection) => void
+    deleteCollectionFromRemote: (id: string) => void
+    addTagFromRemote: (tag: Tag) => void
+    updateTagFromRemote: (id: string, tag: Tag) => void
+    deleteTagFromRemote: (id: string) => void
 }
 
 const defaultCollections: Collection[] = [
@@ -470,9 +482,78 @@ export const useBookmarkStore = create<BookmarkState>()(
                         ? state.selectedTags.filter((t) => t !== tagId)
                         : [...state.selectedTags, tagId],
                 })),
+
+            // Incremental sync actions (update local state from realtime events without triggering Supabase sync)
+            addBookmarkFromRemote: (bookmark) =>
+                set((state) => {
+                    // Avoid duplicates
+                    if (state.bookmarks.some((b) => b.id === bookmark.id)) return state
+                    return { bookmarks: [...state.bookmarks, bookmark] }
+                }),
+
+            updateBookmarkFromRemote: (id, bookmark) =>
+                set((state) => ({
+                    bookmarks: state.bookmarks.map((b) => (b.id === id ? bookmark : b)),
+                })),
+
+            deleteBookmarkFromRemote: (id) =>
+                set((state) => ({
+                    bookmarks: state.bookmarks.filter((b) => b.id !== id),
+                })),
+
+            addCollectionFromRemote: (collection) =>
+                set((state) => {
+                    if (state.collections.some((c) => c.id === collection.id)) return state
+                    return { collections: [...state.collections, collection] }
+                }),
+
+            updateCollectionFromRemote: (id, collection) =>
+                set((state) => ({
+                    collections: state.collections.map((c) => (c.id === id ? collection : c)),
+                })),
+
+            deleteCollectionFromRemote: (id) =>
+                set((state) => ({
+                    collections: state.collections.filter((c) => c.id !== id && !c.isSystem),
+                    bookmarks: state.bookmarks.map((b) =>
+                        b.collectionId === id ? { ...b, collectionId: 'unsorted' } : b
+                    ),
+                })),
+
+            addTagFromRemote: (tag) =>
+                set((state) => {
+                    if (state.tags.some((t) => t.id === tag.id)) return state
+                    return { tags: [...state.tags, tag] }
+                }),
+
+            updateTagFromRemote: (id, tag) =>
+                set((state) => ({
+                    tags: state.tags.map((t) => (t.id === id ? tag : t)),
+                })),
+
+            deleteTagFromRemote: (id) =>
+                set((state) => ({
+                    tags: state.tags.filter((t) => t.id !== id),
+                    bookmarks: state.bookmarks.map((b) => ({
+                        ...b,
+                        tags: b.tags.filter((t) => t !== id),
+                    })),
+                })),
         }),
         {
             name: 'bookmark-manager-storage',
+            storage: createJSONStorage(() => ({
+                getItem: async (name: string) => {
+                    const value = await get(name)
+                    return value ?? null
+                },
+                setItem: async (name: string, value: string) => {
+                    await set(name, value)
+                },
+                removeItem: async (name: string) => {
+                    await del(name)
+                },
+            })),
             partialize: (state) => ({
                 bookmarks: state.bookmarks,
                 collections: state.collections,
