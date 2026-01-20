@@ -22,6 +22,7 @@ export function useSupabaseAuth() {
     const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const isInitializedRef = useRef(false)
+    const hasAuthenticatedRef = useRef(false)
 
     // Handle incremental bookmark changes from realtime events
     const handleBookmarkChange = useCallback(
@@ -170,6 +171,7 @@ export function useSupabaseAuth() {
 
             if (session?.user) {
                 setUser(session.user)
+                hasAuthenticatedRef.current = true
                 await fetchFromSupabase()
                 setupRealtimeSubscription()
             } else {
@@ -182,19 +184,23 @@ export function useSupabaseAuth() {
             const { data: { subscription } } = supabase.auth.onAuthStateChange(
                 async (event, session) => {
                     if (session?.user) {
-                        // Only show loading on explicit sign-in
-                        if (event === 'SIGNED_IN') {
+                        // Only show loading on fresh sign-in (user wasn't already authenticated)
+                        // This prevents loading screen when tab regains focus and Supabase fires SIGNED_IN
+                        if (event === 'SIGNED_IN' && !hasAuthenticatedRef.current) {
                             setIsLoading(true)
                             setUser(session.user)
+                            hasAuthenticatedRef.current = true
                             await fetchFromSupabase()
                             setupRealtimeSubscription()
                             setIsLoading(false)
                         } else {
-                            // For all other events (TOKEN_REFRESHED, USER_UPDATED, etc.), just update user silently
+                            // For all other events (TOKEN_REFRESHED, USER_UPDATED, tab focus, etc.), just update user silently
                             setUser(session.user)
+                            hasAuthenticatedRef.current = true
                         }
                     } else {
                         setUser(null)
+                        hasAuthenticatedRef.current = false
                         if (subscriptionRef.current) {
                             subscriptionRef.current.unsubscribe()
                             subscriptionRef.current = null
