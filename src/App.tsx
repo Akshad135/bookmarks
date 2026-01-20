@@ -19,7 +19,11 @@ function App() {
     const [initialDialogData, setInitialDialogData] = useState<Partial<Bookmark> | null>(null)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
-    const { viewMode } = useBookmarkStore()
+    const { viewMode, initializeDemoMode } = useBookmarkStore()
+
+    useEffect(() => {
+        initializeDemoMode()
+    }, [initializeDemoMode])
 
     // Initialize Supabase auth and realtime subscriptions
     const { user, isConfigured, isLoading, login } = useSupabaseAuth()
@@ -58,6 +62,7 @@ function App() {
     }, [])
 
     const handleAddBookmark = () => {
+        if (import.meta.env.VITE_DEMO_MODE === 'true') return
         setEditingBookmark(null)
         setInitialDialogData(null)
         setIsAddDialogOpen(true)

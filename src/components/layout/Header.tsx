@@ -305,7 +305,11 @@ export function Header({ onAddBookmark, isSidebarCollapsed, onToggleSidebar }: H
                     </Popover>
 
                     {/* Add Bookmark - Icon only on mobile */}
-                    <Button onClick={onAddBookmark} className="gap-2 h-9 px-2 md:px-4">
+                    <Button
+                        onClick={onAddBookmark}
+                        className="gap-2 h-9 px-2 md:px-4"
+                        disabled={import.meta.env.VITE_DEMO_MODE === 'true'}
+                    >
                         <Plus className="h-4 w-4" />
                         <span className="hidden md:inline">Add Bookmark</span>
                     </Button>

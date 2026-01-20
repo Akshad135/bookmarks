@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { cn } from '@/lib/utils'
+import { cn, isDemoMode } from '@/lib/utils'
 import type { Collection, Tag } from '@/types'
 import { toast } from 'sonner'
 import {
@@ -388,6 +388,7 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                         <Button
                             variant="ghost"
                             onClick={() => setIsImportOpen(true)}
+                            disabled={isDemoMode()}
                             className={cn(
                                 'w-full h-10 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
                                 isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
@@ -422,6 +423,7 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                                     isCollapsed ? "h-8 w-8" : "h-6 w-6"
                                 )}
                                 onClick={() => setIsAddCollectionOpen(true)}
+                                disabled={isDemoMode()}
                                 title="Add Collection"
                             >
                                 <Plus className={cn("transition-all", isCollapsed ? "h-5 w-5" : "h-3.5 w-3.5")} />
@@ -456,7 +458,7 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                                                     </>
                                                 )}
                                             </Button>
-                                            {!isCollapsed && (
+                                            {!isCollapsed && !isDemoMode() && (
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button
@@ -529,6 +531,7 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                                     isCollapsed ? "h-8 w-8" : "h-6 w-6"
                                 )}
                                 onClick={() => setIsAddTagOpen(true)}
+                                disabled={isDemoMode()}
                                 title="Add Tag"
                             >
                                 <Plus className={cn("transition-all", isCollapsed ? "h-5 w-5" : "h-3.5 w-3.5")} />
@@ -563,7 +566,7 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                                             </>
                                         )}
                                     </Button>
-                                    {!isCollapsed && (
+                                    {!isCollapsed && !isDemoMode() && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button

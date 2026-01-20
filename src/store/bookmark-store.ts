@@ -5,6 +5,8 @@ import type { Bookmark, Collection, Tag, ViewMode, SortOption, FilterSection } f
 import { generateId } from '@/lib/utils'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import { isDemoMode, getFaviconUrl } from '@/lib/utils'
+import { parseBookmarkHtml } from '@/lib/bookmark-parser'
 
 // Helper to convert camelCase to snake_case for DB
 const toSnakeCase = (obj: Record<string, unknown>): Record<string, unknown> => {
@@ -37,6 +39,9 @@ interface BookmarkState {
     selectedTags: string[]
     user: User | null
     isSyncing: boolean
+
+    // Demo actions
+    initializeDemoMode: () => Promise<void>
 
     // Auth actions
     setUser: (user: User | null) => void
@@ -109,8 +114,45 @@ export const useBookmarkStore = create<BookmarkState>()(
             // Auth actions
             setUser: (user) => set({ user }),
 
+            initializeDemoMode: async () => {
+                if (!isDemoMode()) return
+
+                try {
+                    const response = await fetch('/bookmarks1.html')
+                    if (!response.ok) throw new Error('Failed to fetch demo data')
+                    const text = await response.text()
+                    const { bookmarks } = parseBookmarkHtml(text, 5000)
+
+                    const storeBookmarks: Bookmark[] = bookmarks.map(b => ({
+                        id: generateId(),
+                        url: b.url,
+                        title: b.title,
+                        description: '',
+                        thumbnail: '',
+                        collectionId: 'unsorted',
+                        tags: [],
+                        isFavorite: false,
+                        isArchived: false,
+                        isTrashed: false,
+                        createdAt: b.addDate ? b.addDate.toISOString() : new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        userId: 'demo-user', // Dummy user ID
+                        favicon: getFaviconUrl(b.url)
+                    }))
+
+                    set({
+                        bookmarks: storeBookmarks,
+                        collections: defaultCollections,
+                        tags: []
+                    })
+                } catch (error) {
+                    console.error('Failed to load demo data:', error)
+                }
+            },
+
             // Sync actions
             fetchFromSupabase: async () => {
+                if (isDemoMode()) return
                 if (!isSupabaseConfigured() || !supabase) return
                 const { user } = get()
                 if (!user) return
@@ -163,6 +205,10 @@ export const useBookmarkStore = create<BookmarkState>()(
 
             // Bookmark actions with optimistic updates
             addBookmark: async (bookmark) => {
+                if (isDemoMode()) {
+                    // console.warn('Operation disabled in demo mode')
+                    return
+                }
                 const id = generateId()
                 const now = new Date().toISOString()
                 const newBookmark: Bookmark = {
@@ -198,6 +244,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             },
 
             updateBookmark: async (id, updates) => {
+                if (isDemoMode()) return
                 const now = new Date().toISOString()
 
                 // Optimistic update
@@ -231,6 +278,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             },
 
             deleteBookmark: async (id) => {
+                if (isDemoMode()) return
                 // Optimistic update
                 let deletedBookmark: Bookmark | undefined
                 set((state) => {
@@ -259,6 +307,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             toggleFavorite: async (id) => {
                 const bookmark = get().bookmarks.find((b) => b.id === id)
                 if (bookmark) {
+                    if (isDemoMode()) return
                     get().updateBookmark(id, { isFavorite: !bookmark.isFavorite })
                 }
             },
@@ -266,23 +315,28 @@ export const useBookmarkStore = create<BookmarkState>()(
             toggleArchive: async (id) => {
                 const bookmark = get().bookmarks.find((b) => b.id === id)
                 if (bookmark) {
+                    if (isDemoMode()) return
                     get().updateBookmark(id, { isArchived: !bookmark.isArchived })
                 }
             },
 
             moveToTrash: (id) => {
+                if (isDemoMode()) return
                 get().updateBookmark(id, { isTrashed: true })
             },
 
             restoreFromTrash: (id) => {
+                if (isDemoMode()) return
                 get().updateBookmark(id, { isTrashed: false })
             },
 
             permanentlyDelete: (id) => {
+                if (isDemoMode()) return
                 get().deleteBookmark(id)
             },
 
             emptyTrash: async () => {
+                if (isDemoMode()) return
                 const trashedBookmarks = get().bookmarks.filter((b) => b.isTrashed)
 
                 // Early return if no items to delete
@@ -312,6 +366,7 @@ export const useBookmarkStore = create<BookmarkState>()(
 
             // Collection actions
             addCollection: async (name, icon, color) => {
+                if (isDemoMode()) return generateId() // Return dummy ID
                 const id = generateId()
                 const newCollection: Collection = { id, name, icon, color }
 
@@ -340,6 +395,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             },
 
             updateCollection: async (id, updates) => {
+                if (isDemoMode()) return
                 let previousCollection: Collection | undefined
                 set((state) => {
                     previousCollection = state.collections.find((c) => c.id === id)
@@ -368,6 +424,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             },
 
             deleteCollection: async (id) => {
+                if (isDemoMode()) return
                 let deletedCollection: Collection | undefined
                 set((state) => {
                     deletedCollection = state.collections.find((c) => c.id === id)
@@ -395,6 +452,7 @@ export const useBookmarkStore = create<BookmarkState>()(
 
             // Tag actions
             addTag: async (name, color) => {
+                if (isDemoMode()) return
                 const id = generateId()
                 const newTag: Tag = { id, name, color }
 
@@ -419,6 +477,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             },
 
             updateTag: async (id, updates) => {
+                if (isDemoMode()) return
                 let previousTag: Tag | undefined
                 set((state) => {
                     previousTag = state.tags.find((t) => t.id === id)
@@ -445,6 +504,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             },
 
             deleteTag: async (id) => {
+                if (isDemoMode()) return
                 let deletedTag: Tag | undefined
                 set((state) => {
                     deletedTag = state.tags.find((t) => t.id === id)
@@ -552,9 +612,11 @@ export const useBookmarkStore = create<BookmarkState>()(
                     await set(name, value)
                 },
                 removeItem: async (name: string) => {
+                    if (isDemoMode()) return // Don't delete form real storage in demo mode
                     await del(name)
                 },
             })),
+            skipHydration: isDemoMode(), // Skip hydration in demo mode
             partialize: (state) => ({
                 bookmarks: state.bookmarks,
                 collections: state.collections,

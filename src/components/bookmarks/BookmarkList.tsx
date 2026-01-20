@@ -13,7 +13,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { getDomainFromUrl, getFaviconUrl, cn, truncateText } from '@/lib/utils'
+import { getDomainFromUrl, getFaviconUrl, cn, truncateText, isDemoMode } from '@/lib/utils'
 import type { Bookmark } from '@/types'
 import {
     Heart,
@@ -153,7 +153,13 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                             variant="ghost"
                             size="icon"
                             className={cn('h-7 w-7 md:h-8 md:w-8', bookmark.isFavorite && 'text-red-500')}
-                            onClick={() => toggleFavorite(bookmark.id)}
+                            onClick={() => {
+                                if (isDemoMode()) {
+                                    toast.error('Actions are disabled in demo mode')
+                                    return
+                                }
+                                toggleFavorite(bookmark.id)
+                            }}
                         >
                             <Heart className={cn('h-4 w-4', bookmark.isFavorite && 'fill-current')} />
                         </Button>
@@ -192,7 +198,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                             <Link className="mr-2 h-4 w-4" />
                             Copy URL
                         </DropdownMenuItem>
-                        {!bookmark.isTrashed && (
+                        {!bookmark.isTrashed && !isDemoMode() && (
                             <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => onEdit?.(bookmark)}>
@@ -222,7 +228,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                                 </DropdownMenuItem>
                             </>
                         )}
-                        {bookmark.isTrashed && (
+                        {bookmark.isTrashed && !isDemoMode() && (
                             <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => restoreFromTrash(bookmark.id)}>

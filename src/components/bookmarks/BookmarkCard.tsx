@@ -15,7 +15,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { getDomainFromUrl, getFaviconUrl, formatDate, cn } from '@/lib/utils'
+import { getDomainFromUrl, getFaviconUrl, formatDate, cn, isDemoMode } from '@/lib/utils'
 import type { Bookmark } from '@/types'
 import { toast } from 'sonner'
 import {
@@ -60,6 +60,10 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
 
     const handleToggleFavorite = (e?: React.MouseEvent) => {
         e?.stopPropagation()
+        if (isDemoMode()) {
+            toast.error('Actions are disabled in demo mode')
+            return
+        }
         toggleFavorite(bookmark.id)
         toast.success(bookmark.isFavorite ? 'Removed from favorites' : 'Added to favorites')
     }
@@ -166,7 +170,7 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                                 <Link className="mr-2 h-4 w-4" />
                                 Copy URL
                             </DropdownMenuItem>
-                            {!bookmark.isTrashed && (
+                            {!bookmark.isTrashed && !isDemoMode() && (
                                 <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => onEdit?.(bookmark)}>
@@ -196,7 +200,7 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                                     </DropdownMenuItem>
                                 </>
                             )}
-                            {bookmark.isTrashed && (
+                            {bookmark.isTrashed && !isDemoMode() && (
                                 <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={handleRestore}>
