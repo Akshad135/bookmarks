@@ -13,6 +13,8 @@ export interface ParsedBookmark {
     title: string
     addDate?: Date
     folder?: string
+    tags?: string[]
+    isFavorite?: boolean
 }
 
 export interface ParseResult {
@@ -71,12 +73,16 @@ export function parseBookmarkHtml(htmlContent: string, limit: number = 2500): Pa
                         const url = anchor.getAttribute('href')
                         const title = anchor.textContent?.trim() || url || 'Untitled'
                         const addDateAttr = anchor.getAttribute('ADD_DATE')
+                        const tagsAttr = anchor.getAttribute('TAGS')
+                        const favoriteAttr = anchor.getAttribute('FAVORITE')
 
                         if (url && isValidUrl(url)) {
                             const bookmark: ParsedBookmark = {
                                 url,
                                 title,
                                 folder: folderStack.length > 0 ? folderStack.join('/') : undefined,
+                                tags: tagsAttr ? tagsAttr.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+                                isFavorite: favoriteAttr === 'true'
                             }
 
                             // Parse ADD_DATE (Unix timestamp in seconds)

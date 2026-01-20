@@ -143,9 +143,35 @@ export const useBookmarkStore = create<BookmarkState>()(
                         }
                     })
 
+                    // Extract unique tags and create tag objects
+                    const tagMap = new Map<string, string>()
+                    const newTags: Tag[] = []
+
+                    const TAG_COLORS = [
+                        '#ef4444', '#f97316', '#eab308', '#22c55e',
+                        '#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899'
+                    ]
+
+                    bookmarks.forEach(b => {
+                        if (b.tags) {
+                            b.tags.forEach(tagName => {
+                                if (!tagMap.has(tagName)) {
+                                    const id = generateId()
+                                    newTags.push({
+                                        id,
+                                        name: tagName,
+                                        color: TAG_COLORS[newTags.length % TAG_COLORS.length],
+                                    })
+                                    tagMap.set(tagName, id)
+                                }
+                            })
+                        }
+                    })
+
                     const storeBookmarks: Bookmark[] = bookmarks.map(b => {
                         const folderName = b.folder?.split('/').pop() || ''
                         const collectionId = folderName ? (folderMap.get(folderName) || 'unsorted') : 'unsorted'
+                        const bookmarkTags = b.tags?.map(t => tagMap.get(t)!).filter(Boolean) || []
 
                         return {
                             id: generateId(),
@@ -154,8 +180,8 @@ export const useBookmarkStore = create<BookmarkState>()(
                             description: '',
                             thumbnail: '',
                             collectionId,
-                            tags: [],
-                            isFavorite: false,
+                            tags: bookmarkTags,
+                            isFavorite: b.isFavorite || false,
                             isArchived: false,
                             isTrashed: false,
                             createdAt: b.addDate ? b.addDate.toISOString() : new Date().toISOString(),
@@ -168,7 +194,7 @@ export const useBookmarkStore = create<BookmarkState>()(
                     set({
                         bookmarks: storeBookmarks,
                         collections: newCollections,
-                        tags: []
+                        tags: newTags
                     })
                 } catch (error) {
                     console.error('Failed to load demo data:', error)
