@@ -123,26 +123,51 @@ export const useBookmarkStore = create<BookmarkState>()(
                     const text = await response.text()
                     const { bookmarks } = parseBookmarkHtml(text, 5000)
 
-                    const storeBookmarks: Bookmark[] = bookmarks.map(b => ({
-                        id: generateId(),
-                        url: b.url,
-                        title: b.title,
-                        description: '',
-                        thumbnail: '',
-                        collectionId: 'unsorted',
-                        tags: [],
-                        isFavorite: false,
-                        isArchived: false,
-                        isTrashed: false,
-                        createdAt: b.addDate ? b.addDate.toISOString() : new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        userId: 'demo-user', // Dummy user ID
-                        favicon: getFaviconUrl(b.url)
-                    }))
+                    // Extract unique folders and create collections
+                    const folderMap = new Map<string, string>()
+                    const newCollections: Collection[] = [...defaultCollections]
+
+                    bookmarks.forEach(b => {
+                        if (b.folder) {
+                            const folderName = b.folder.split('/').pop() || ''
+                            if (folderName && !folderMap.has(folderName)) {
+                                const id = generateId()
+                                newCollections.push({
+                                    id,
+                                    name: folderName,
+                                    icon: 'folder',
+                                    isSystem: false
+                                })
+                                folderMap.set(folderName, id)
+                            }
+                        }
+                    })
+
+                    const storeBookmarks: Bookmark[] = bookmarks.map(b => {
+                        const folderName = b.folder?.split('/').pop() || ''
+                        const collectionId = folderName ? (folderMap.get(folderName) || 'unsorted') : 'unsorted'
+
+                        return {
+                            id: generateId(),
+                            url: b.url,
+                            title: b.title,
+                            description: '',
+                            thumbnail: '',
+                            collectionId,
+                            tags: [],
+                            isFavorite: false,
+                            isArchived: false,
+                            isTrashed: false,
+                            createdAt: b.addDate ? b.addDate.toISOString() : new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                            userId: 'demo-user', // Dummy user ID
+                            favicon: getFaviconUrl(b.url)
+                        }
+                    })
 
                     set({
                         bookmarks: storeBookmarks,
-                        collections: defaultCollections,
+                        collections: newCollections,
                         tags: []
                     })
                 } catch (error) {
