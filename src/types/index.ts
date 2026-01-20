@@ -10,6 +10,7 @@ export interface Bookmark {
     isFavorite: boolean
     isArchived: boolean
     isTrashed: boolean
+    isPinned: boolean
     createdAt: string
     updatedAt: string
 }

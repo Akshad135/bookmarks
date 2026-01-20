@@ -144,6 +144,7 @@ export function ImportBookmarksDialog({ open, onOpenChange }: ImportBookmarksDia
                         collectionId,
                         tags: [],
                         isFavorite: false,
+                        isPinned: false,
                         favicon: getFaviconUrl(parsed.url),
                     })
                     imported++

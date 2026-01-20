@@ -151,6 +151,7 @@ export function AddBookmarkDialog({
                 collectionId,
                 tags: selectedTagIds,
                 isFavorite,
+                isPinned: editBookmark?.isPinned ?? false,
                 favicon: getFaviconUrl(url),
             }
 

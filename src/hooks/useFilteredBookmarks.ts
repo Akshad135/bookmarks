@@ -54,6 +54,10 @@ export function useFilteredBookmarks(): Bookmark[] {
 
         // Sort
         filtered = [...filtered].sort((a, b) => {
+            // Pinned bookmarks always come first
+            if (a.isPinned && !b.isPinned) return -1
+            if (!a.isPinned && b.isPinned) return 1
+
             switch (sortOption) {
                 case 'date-desc':
                     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -67,6 +71,7 @@ export function useFilteredBookmarks(): Bookmark[] {
                     return 0
             }
         })
+
 
         return filtered
     }, [bookmarks, activeSection, searchQuery, selectedTags, sortOption])

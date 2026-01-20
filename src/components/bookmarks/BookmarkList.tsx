@@ -25,6 +25,7 @@ import {
     ArchiveRestore,
     RotateCcw,
     Link,
+    Pin,
 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -35,7 +36,7 @@ interface BookmarkListItemProps {
 }
 
 function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
-    const { tags, toggleFavorite, toggleArchive, moveToTrash, restoreFromTrash, permanentlyDelete } =
+    const { tags, toggleFavorite, toggleArchive, togglePin, moveToTrash, restoreFromTrash, permanentlyDelete } =
         useBookmarkStore()
     const [imgError, setImgError] = useState(false)
 
@@ -98,6 +99,10 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                         <span className="md:hidden">{truncateText(bookmark.title, 20)}</span>
                         <span className="hidden md:inline">{truncateText(bookmark.title, 60)}</span>
                     </h3>
+                    {/* Pin indicator */}
+                    {bookmark.isPinned && (
+                        <Pin className="h-3.5 w-3.5 shrink-0 text-primary fill-current" />
+                    )}
                     {/* Tags next to title - visible on md+ */}
                     <div className="hidden md:flex items-center gap-1.5 shrink-0">
                         {bookmarkTags.slice(0, 2).map((tag) => (
@@ -217,6 +222,10 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                                             Archive
                                         </>
                                     )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => togglePin(bookmark.id)}>
+                                    <Pin className={cn('mr-2 h-4 w-4', bookmark.isPinned && 'fill-current')} />
+                                    {bookmark.isPinned ? 'Unpin' : 'Pin'}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem

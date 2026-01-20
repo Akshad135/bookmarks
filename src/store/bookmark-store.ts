@@ -55,6 +55,7 @@ interface BookmarkState {
     deleteBookmark: (id: string) => void
     toggleFavorite: (id: string) => void
     toggleArchive: (id: string) => void
+    togglePin: (id: string) => void
     moveToTrash: (id: string) => void
     restoreFromTrash: (id: string) => void
     permanentlyDelete: (id: string) => void
@@ -184,6 +185,7 @@ export const useBookmarkStore = create<BookmarkState>()(
                             isFavorite: b.isFavorite || false,
                             isArchived: false,
                             isTrashed: false,
+                            isPinned: false,
                             createdAt: b.addDate ? b.addDate.toISOString() : new Date().toISOString(),
                             updatedAt: new Date().toISOString(),
                             userId: 'demo-user', // Dummy user ID
@@ -267,6 +269,7 @@ export const useBookmarkStore = create<BookmarkState>()(
                     id,
                     isTrashed: false,
                     isArchived: false,
+                    isPinned: bookmark.isPinned ?? false,
                     createdAt: now,
                     updatedAt: now,
                 }
@@ -368,6 +371,14 @@ export const useBookmarkStore = create<BookmarkState>()(
                 if (bookmark) {
                     if (isDemoMode()) return
                     get().updateBookmark(id, { isArchived: !bookmark.isArchived })
+                }
+            },
+
+            togglePin: async (id) => {
+                const bookmark = get().bookmarks.find((b) => b.id === id)
+                if (bookmark) {
+                    if (isDemoMode()) return
+                    get().updateBookmark(id, { isPinned: !bookmark.isPinned })
                 }
             },
 
