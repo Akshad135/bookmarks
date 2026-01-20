@@ -96,7 +96,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                         onClick={handleOpenUrl}
                     >
                         <span className="md:hidden">{truncateText(bookmark.title, 20)}</span>
-                        <span className="hidden md:inline">{bookmark.title}</span>
+                        <span className="hidden md:inline">{truncateText(bookmark.title, 60)}</span>
                     </h3>
                     {/* Tags next to title - visible on md+ */}
                     <div className="hidden md:flex items-center gap-1.5 shrink-0">
@@ -123,7 +123,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                 {/* Domain */}
                 <div className="text-sm text-muted-foreground truncate">
                     <span className="md:hidden">{truncateText(domain, 30)}</span>
-                    <span className="hidden md:inline">{domain}</span>
+                    <span className="hidden md:inline">{truncateText(domain, 45)}</span>
                 </div>
                 {/* Tags on mobile - show on new line */}
                 {bookmarkTags.length > 0 && (
