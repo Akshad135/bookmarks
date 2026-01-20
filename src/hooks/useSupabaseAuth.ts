@@ -169,26 +169,28 @@ export function useSupabaseAuth() {
             // Check if we have cached data from IndexedDB
             const hasCachedData = useBookmarkStore.getState().bookmarks.length > 0
 
-            // Get current session
-            const { data: { session } } = await supabase.auth.getSession()
+            // Helper to do the full auth + sync flow
+            const authAndSync = async () => {
+                const { data: { session } } = await supabase!.auth.getSession()
 
-            if (session?.user) {
-                setUser(session.user)
-                hasAuthenticatedRef.current = true
-
-                if (hasCachedData) {
-                    // Race: sync vs timeout. If sync wins, great. If timeout wins, show cached data.
-                    // 5 second timeout to handle large bookmark collections on slower connections
-                    const syncPromise = fetchFromSupabase().then(() => setupRealtimeSubscription())
-                    const timeoutPromise = new Promise(resolve => setTimeout(resolve, 5000))
-                    await Promise.race([syncPromise, timeoutPromise])
-                } else {
-                    // No cached data - must wait for sync
+                if (session?.user) {
+                    setUser(session.user)
+                    hasAuthenticatedRef.current = true
                     await fetchFromSupabase()
                     setupRealtimeSubscription()
+                } else {
+                    setUser(null)
                 }
+            }
+
+            if (hasCachedData) {
+                // Race: auth+sync vs timeout. If timeout wins, show cached data immediately.
+                // 5 second timeout to handle offline/slow network
+                const timeoutPromise = new Promise(resolve => setTimeout(resolve, 5000))
+                await Promise.race([authAndSync(), timeoutPromise])
             } else {
-                setUser(null)
+                // No cached data - must wait for auth+sync to complete
+                await authAndSync()
             }
 
             setIsLoading(false)
