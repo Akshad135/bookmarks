@@ -185,7 +185,7 @@ export const useBookmarkStore = create<BookmarkState>()(
                             isFavorite: b.isFavorite || false,
                             isArchived: false,
                             isTrashed: false,
-                            isPinned: false,
+                            isPinned: b.isPinned || false,
                             createdAt: b.addDate ? b.addDate.toISOString() : new Date().toISOString(),
                             updatedAt: new Date().toISOString(),
                             userId: 'demo-user', // Dummy user ID

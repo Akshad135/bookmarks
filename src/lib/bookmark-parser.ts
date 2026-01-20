@@ -15,6 +15,7 @@ export interface ParsedBookmark {
     folder?: string
     tags?: string[]
     isFavorite?: boolean
+    isPinned?: boolean
 }
 
 export interface ParseResult {
@@ -75,6 +76,7 @@ export function parseBookmarkHtml(htmlContent: string, limit: number = 2500): Pa
                         const addDateAttr = anchor.getAttribute('ADD_DATE')
                         const tagsAttr = anchor.getAttribute('TAGS')
                         const favoriteAttr = anchor.getAttribute('FAVORITE')
+                        const pinnedAttr = anchor.getAttribute('PINNED')
 
                         if (url && isValidUrl(url)) {
                             const bookmark: ParsedBookmark = {
@@ -82,7 +84,8 @@ export function parseBookmarkHtml(htmlContent: string, limit: number = 2500): Pa
                                 title,
                                 folder: folderStack.length > 0 ? folderStack.join('/') : undefined,
                                 tags: tagsAttr ? tagsAttr.split(',').map(t => t.trim()).filter(Boolean) : undefined,
-                                isFavorite: favoriteAttr === 'true'
+                                isFavorite: favoriteAttr === 'true',
+                                isPinned: pinnedAttr === 'true'
                             }
 
                             // Parse ADD_DATE (Unix timestamp in seconds)
