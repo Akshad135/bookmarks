@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -93,6 +94,15 @@ function App() {
 
     const closeMobileSidebar = () => {
         setIsMobileSidebarOpen(false)
+    }
+
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-background text-foreground">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
     }
 
     return (

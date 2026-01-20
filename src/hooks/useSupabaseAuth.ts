@@ -176,9 +176,11 @@ export function useSupabaseAuth() {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (_event, session) => {
                 if (session?.user) {
+                    setIsLoading(true)
                     setUser(session.user)
                     await fetchFromSupabase()
                     setupRealtimeSubscription()
+                    setIsLoading(false)
                 } else {
                     setUser(null)
                     if (subscriptionRef.current) {
