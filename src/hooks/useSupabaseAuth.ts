@@ -174,8 +174,14 @@ export function useSupabaseAuth() {
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
+            async (event, session) => {
                 if (session?.user) {
+                    // Don't show global loading on token refresh
+                    if (event === 'TOKEN_REFRESHED') {
+                        setUser(session.user)
+                        return
+                    }
+
                     setIsLoading(true)
                     setUser(session.user)
                     await fetchFromSupabase()
