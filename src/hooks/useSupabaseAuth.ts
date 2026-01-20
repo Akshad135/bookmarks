@@ -21,6 +21,7 @@ export function useSupabaseAuth() {
     } = useBookmarkStore()
     const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const isInitializedRef = useRef(false)
 
     // Handle incremental bookmark changes from realtime events
     const handleBookmarkChange = useCallback(
@@ -152,65 +153,73 @@ export function useSupabaseAuth() {
         }
     }, [])
 
-    const initializeAuth = useCallback(async () => {
-        if (!isSupabaseConfigured() || !supabase) {
-            setUser(null)
+    // Run initialization exactly once on mount
+    useEffect(() => {
+        if (isInitializedRef.current) return
+        isInitializedRef.current = true
+
+        const initialize = async () => {
+            if (!isSupabaseConfigured() || !supabase) {
+                setUser(null)
+                setIsLoading(false)
+                return () => { }
+            }
+
+            // Get current session
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (session?.user) {
+                setUser(session.user)
+                await fetchFromSupabase()
+                setupRealtimeSubscription()
+            } else {
+                setUser(null)
+            }
+
             setIsLoading(false)
-            return
-        }
 
-        // Get current session
-        const { data: { session } } = await supabase.auth.getSession()
-
-        if (session?.user) {
-            setUser(session.user)
-            await fetchFromSupabase()
-            setupRealtimeSubscription()
-        } else {
-            setUser(null)
-        }
-
-        setIsLoading(false)
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                if (session?.user) {
-                    // Don't show global loading on token refresh
-                    if (event === 'TOKEN_REFRESHED') {
-                        setUser(session.user)
-                        return
-                    }
-
-                    setIsLoading(true)
-                    setUser(session.user)
-                    await fetchFromSupabase()
-                    setupRealtimeSubscription()
-                    setIsLoading(false)
-                } else {
-                    setUser(null)
-                    if (subscriptionRef.current) {
-                        subscriptionRef.current.unsubscribe()
-                        subscriptionRef.current = null
+            // Listen for auth changes
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(
+                async (event, session) => {
+                    if (session?.user) {
+                        // Only show loading on explicit sign-in
+                        if (event === 'SIGNED_IN') {
+                            setIsLoading(true)
+                            setUser(session.user)
+                            await fetchFromSupabase()
+                            setupRealtimeSubscription()
+                            setIsLoading(false)
+                        } else {
+                            // For all other events (TOKEN_REFRESHED, USER_UPDATED, etc.), just update user silently
+                            setUser(session.user)
+                        }
+                    } else {
+                        setUser(null)
+                        if (subscriptionRef.current) {
+                            subscriptionRef.current.unsubscribe()
+                            subscriptionRef.current = null
+                        }
                     }
                 }
-            }
-        )
+            )
 
-        return () => {
-            subscription.unsubscribe()
-            if (subscriptionRef.current) {
-                subscriptionRef.current.unsubscribe()
+            return () => {
+                subscription.unsubscribe()
+                if (subscriptionRef.current) {
+                    subscriptionRef.current.unsubscribe()
+                }
             }
         }
-    }, [setUser, fetchFromSupabase, setupRealtimeSubscription])
 
-    useEffect(() => {
-        const cleanup = initializeAuth()
+        let cleanup: (() => void) | undefined
+        initialize().then(fn => { cleanup = fn })
+
         return () => {
-            cleanup.then(fn => fn?.())
+            cleanup?.()
         }
-    }, [initializeAuth])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []) // Run only once on mount
 
     return { user, isConfigured: isSupabaseConfigured(), isLoading, login }
 }
+
