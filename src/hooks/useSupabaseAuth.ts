@@ -166,34 +166,82 @@ export function useSupabaseAuth() {
                 return () => { }
             }
 
+            // Wait a bit for Zustand to hydrate from IndexedDB
+            // IndexedDB is async, so we need to give it time to load
+            await new Promise(resolve => setTimeout(resolve, 100))
+
             // Check if we have cached data from IndexedDB
             const hasCachedData = useBookmarkStore.getState().bookmarks.length > 0
 
-            // Helper to do the full auth + sync flow
-            const authAndSync = async () => {
-                const { data: { session } } = await supabase!.auth.getSession()
+            // Helper to do the full auth + sync flow with timeout
+            const authAndSync = async (): Promise<boolean> => {
+                try {
+                    // Create an AbortController for timeout
+                    const controller = new AbortController()
+                    const timeoutId = setTimeout(() => controller.abort(), 5000)
 
-                if (session?.user) {
-                    setUser(session.user)
-                    hasAuthenticatedRef.current = true
-                    await fetchFromSupabase()
-                    setupRealtimeSubscription()
-                } else {
-                    setUser(null)
+                    const { data: { session } } = await supabase!.auth.getSession()
+
+                    if (session?.user) {
+                        setUser(session.user)
+                        hasAuthenticatedRef.current = true
+
+                        // Only attempt sync if online
+                        if (navigator.onLine) {
+                            await fetchFromSupabase()
+                        }
+                        setupRealtimeSubscription()
+                    } else {
+                        setUser(null)
+                    }
+
+                    clearTimeout(timeoutId)
+                    return true // Success
+                } catch (error) {
+                    // If aborted or any network error, return false
+                    console.warn('Auth/sync failed or timed out:', error)
+                    return false
                 }
             }
 
             if (hasCachedData) {
-                // Race: auth+sync vs timeout. If timeout wins, show cached data immediately.
-                // 5 second timeout to handle offline/slow network
-                const timeoutPromise = new Promise(resolve => setTimeout(resolve, 5000))
-                await Promise.race([authAndSync(), timeoutPromise])
-            } else {
-                // No cached data - must wait for auth+sync to complete
-                await authAndSync()
-            }
+                // If offline, skip sync attempt entirely and show cached data immediately
+                if (!navigator.onLine) {
+                    // Try to get session from cache (Supabase stores it in localStorage)
+                    try {
+                        const { data: { session } } = await supabase!.auth.getSession()
+                        if (session?.user) {
+                            setUser(session.user)
+                            hasAuthenticatedRef.current = true
+                        }
+                    } catch {
+                        // Ignore errors when offline
+                    }
+                    setIsLoading(false)
+                } else {
+                    // Online with cache: Race auth+sync vs 5s timeout
+                    const timeoutPromise = new Promise<boolean>(resolve =>
+                        setTimeout(() => resolve(false), 5000)
+                    )
 
-            setIsLoading(false)
+                    // Start both promises
+                    const syncPromise = authAndSync()
+
+                    // Wait for whichever finishes first
+                    await Promise.race([syncPromise, timeoutPromise])
+
+                    // Set loading false immediately after race completes
+                    setIsLoading(false)
+                }
+            } else {
+                // No cached data - must wait for auth+sync to complete (with reasonable timeout)
+                // Give it 15 seconds max for first load
+                const timeoutPromise = new Promise<boolean>(resolve =>
+                    setTimeout(() => resolve(false), 15000)
+                )
+                await Promise.race([authAndSync(), timeoutPromise])
+                setIsLoading(false)
+            }
 
             // Listen for auth changes
             const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -205,7 +253,9 @@ export function useSupabaseAuth() {
                             setIsLoading(true)
                             setUser(session.user)
                             hasAuthenticatedRef.current = true
-                            await fetchFromSupabase()
+                            if (navigator.onLine) {
+                                await fetchFromSupabase()
+                            }
                             setupRealtimeSubscription()
                             setIsLoading(false)
                         } else {
