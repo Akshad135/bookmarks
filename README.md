@@ -74,12 +74,12 @@ create policy "Users can only see their own tags" on tags for all using ((select
 
 4. **Configure Environment Variables** in Vercel settings:
    - **Required**:
-     - `VITE_SUPABASE_URL`: Go to your Supabase Project -> **Project Settings** -> **Data API** -> Copy "Project URL".
-     - `VITE_SUPABASE_ANON_KEY`: Go to your Supabase Project -> **Project Settings** -> **API Keys** -> Click on to the center tab **Legacy anon, service_role API keys** -> Copy "anon" public key.
+     - `VITE_SB_HOST`: Go to your Supabase Project -> **Project Settings** -> **Data API** -> Copy "Project URL".
+     - `VITE_SB_LEGACY_AN`: Go to your Supabase Project -> **Project Settings** -> **API Keys** -> Click on to the center tab **Legacy anon, service_role API keys** -> Copy "anon" public key.
    - **Optional** (for customization):
-     - `VITE_APP_NAME`: Name of your app (default: "Bookmarks").
-     - `VITE_APP_SUBTITLE`: Sidebar subtitle text.
-     - `VITE_APP_ICON`: Path or URL to app icon (default: "/favicon.svg").
+     - `VITE_USER_TITLE`: Name of your app (default: "Bookmarks").
+     - `VITE_USER_SUBTITLE`: Sidebar subtitle text.
+     - `VITE_USER_ICON`: Path or URL to app icon (default: "/favicon.svg").
 
 ## Supported Browsers
 

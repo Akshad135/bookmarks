@@ -63,7 +63,7 @@ function App() {
     }, [])
 
     const handleAddBookmark = () => {
-        if (import.meta.env.VITE_DEMO_MODE === 'true') return
+        if (import.meta.env.VITE_DM === 'true') return
         setEditingBookmark(null)
         setInitialDialogData(null)
         setIsAddDialogOpen(true)
