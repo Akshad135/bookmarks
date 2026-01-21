@@ -84,13 +84,3 @@ create policy "Users can only see their own tags" on tags for all using ((select
 ## Supported Browsers
 
 To use the **Share via** feature on Android, please use a browser that supports PWA installation and Share Target API, such as **Chrome Mobile** or **Samsung Internet**. Install the app to your home screen to enable sharing directly from other apps.
-
-## Migrations
-
-If you are an existing user updating from a previous version, run the following SQL migrations in your Supabase SQL Editor:
-
-```sql
--- Migration: Add is_pinned column (if updating from older version)
-ALTER TABLE bookmarks ADD COLUMN IF NOT EXISTS is_pinned boolean DEFAULT false;
-```
-
