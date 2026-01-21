@@ -5,10 +5,10 @@ A free, self-hostable bookmark manager to organize your web life.
 <!-- ![Desktop](https://github.com/Akshad135/bookmarks/blob/main/public/desktop.png)
 ![Mobile](https://github.com/Akshad135/bookmarks/blob/main/public/mobile.png) -->
 ## Desktop
-<img src="https://github.com/Akshad135/bookmarks/blob/main/public/desktop.png" width="750" alt="Desktop View"/>
+<img src="https://github.com/Akshad135/bookmarks/blob/main/public/desktop_demo.png" width="750" alt="Desktop View"/>
 
 ## Mobile
-<img src="https://github.com/Akshad135/bookmarks/blob/main/public/mobile.png" width="250" alt="Mobile View"/>
+<img src="https://github.com/Akshad135/bookmarks/blob/main/public/mobile_demo.png" width="250" alt="Mobile View"/>
 
 ## Setup
 
