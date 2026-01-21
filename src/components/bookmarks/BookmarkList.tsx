@@ -99,10 +99,6 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                         <span className="md:hidden">{truncateText(bookmark.title, 20)}</span>
                         <span className="hidden md:inline">{truncateText(bookmark.title, 60)}</span>
                     </h3>
-                    {/* Pin indicator */}
-                    {bookmark.isPinned && (
-                        <Pin className="h-3.5 w-3.5 shrink-0 text-primary fill-current" />
-                    )}
                     {/* Tags next to title - visible on md+ */}
                     <div className="hidden md:flex items-center gap-1.5 shrink-0">
                         {bookmarkTags.slice(0, 2).map((tag) => (
@@ -152,6 +148,13 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
 
             {/* Actions - absolute on mobile, flex on desktop */}
             <div className="absolute right-2 top-2 flex md:static items-center shrink-0 bg-card/80 backdrop-blur-sm md:bg-transparent rounded-bl-lg md:rounded-none pl-1 md:pl-0">
+                {/* Pin indicator */}
+                {bookmark.isPinned && (
+                    <div className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center">
+                        <Pin className="h-4 w-4 text-primary fill-current" />
+                    </div>
+                )}
+
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button

@@ -132,9 +132,13 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                 <div className="absolute right-2 top-2 flex gap-1.5">
                     {/* Pin indicator */}
                     {bookmark.isPinned && (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-background/80 backdrop-blur-sm">
-                            <Pin className="h-4 w-4 text-primary fill-current" />
-                        </div>
+                        <Button
+                            variant="secondary"
+                            size="icon"
+                            className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background text-primary pointer-events-none"
+                        >
+                            <Pin className="h-4 w-4 fill-current" />
+                        </Button>
                     )}
                     <Tooltip>
                         <TooltipTrigger asChild>
