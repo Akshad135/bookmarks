@@ -72,7 +72,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             bookmarks: [],
             collections: defaultCollections,
             tags: defaultTags,
-            viewMode: 'grid',
+            viewMode: typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'grid',
             sortOption: 'date-desc',
             activeSection: 'all',
             searchQuery: '',

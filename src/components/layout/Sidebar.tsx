@@ -115,6 +115,8 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
         activeSection,
         setActiveSection,
         selectedTags,
+        setSelectedTags,
+        setSearchQuery,
         toggleTag,
         addCollection,
         updateCollection,
@@ -307,6 +309,10 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
 
     const handleNavClick = (id: string) => {
         setActiveSection(id)
+        if (id === 'all') {
+            setSelectedTags([])
+            setSearchQuery('')
+        }
         onCloseMobile?.()
     }
 

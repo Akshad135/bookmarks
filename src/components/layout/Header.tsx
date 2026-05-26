@@ -134,7 +134,7 @@ export function Header({ onAddBookmark, isSidebarCollapsed, onToggleSidebar }: H
 
     return (
         <>
-            <header className="flex h-16 md:h-20 items-center justify-between border-b border-border px-3 md:px-6 gap-2 transition-all duration-300">
+            <header className="flex h-16 md:h-20 items-center justify-between border-b border-border px-4 md:px-6 gap-2 transition-all duration-300">
                 {/* Left side: Menu + Title */}
                 <div className="flex items-center gap-2 md:gap-4 min-w-0">
                     <Button

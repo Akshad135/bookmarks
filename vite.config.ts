@@ -10,25 +10,48 @@ export default defineConfig({
         tailwindcss(),
         VitePWA({
             registerType: "autoUpdate",
-            includeAssets: ["favicon.svg"],
+            includeAssets: ["favicon.svg", "icon-192.png", "icon-512.png"],
             manifest: {
                 name: "Bookmark Manager",
                 short_name: "Bookmarks",
                 description: "A sleek, modern bookmark manager to organize your web resources",
+                id: "/",
                 theme_color: "#f97316",
                 background_color: "#09090b",
                 display: "standalone",
                 orientation: "portrait-primary",
                 scope: "/",
                 start_url: "/",
+                prefer_related_applications: false,
                 icons: [
                     {
                         src: "/favicon.svg",
                         sizes: "any",
                         type: "image/svg+xml",
-                        purpose: "any maskable",
+                        purpose: "any",
+                    },
+                    {
+                        src: "/icon-192.png",
+                        sizes: "192x192",
+                        type: "image/png",
+                        purpose: "any",
+                    },
+                    {
+                        src: "/icon-512.png",
+                        sizes: "512x512",
+                        type: "image/png",
+                        purpose: "any",
                     },
                 ],
+                share_target: {
+                    action: "/",
+                    method: "GET",
+                    params: {
+                        title: "title",
+                        text: "text",
+                        url: "url",
+                    },
+                },
             },
             workbox: {
                 globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
