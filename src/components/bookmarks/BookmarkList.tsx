@@ -93,7 +93,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                 {/* Title Row */}
                 <div className="flex items-center gap-2">
                     <h3
-                        className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                        className="font-medium truncate cursor-pointer hover:text-primary transition-colors selectable-text"
                         onClick={handleOpenUrl}
                     >
                         <span className="md:hidden">{truncateText(bookmark.title, 20)}</span>
@@ -122,7 +122,7 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
                     </div>
                 </div>
                 {/* Domain */}
-                <div className="text-sm text-muted-foreground truncate">
+                <div className="text-sm text-muted-foreground truncate selectable-text">
                     <span className="md:hidden">{truncateText(domain, 30)}</span>
                     <span className="hidden md:inline">{truncateText(domain, 45)}</span>
                 </div>
@@ -265,18 +265,24 @@ function BookmarkListItem({ bookmark, onEdit }: BookmarkListItemProps) {
 
 interface BookmarkListProps {
     onEditBookmark?: (bookmark: Bookmark) => void
+    isLoading?: boolean
 }
 
 import { Inbox } from 'lucide-react'
 import { useFilteredBookmarks } from '@/hooks/useFilteredBookmarks'
+import { BookmarkSkeleton } from './BookmarkSkeleton'
 
-export function BookmarkList({ onEditBookmark }: BookmarkListProps) {
+export function BookmarkList({ onEditBookmark, isLoading }: BookmarkListProps) {
     const { searchQuery } = useBookmarkStore()
     const filteredBookmarks = useFilteredBookmarks()
 
+    if (isLoading) {
+        return <BookmarkSkeleton viewMode="list" />
+    }
+
     if (filteredBookmarks.length === 0) {
         return (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 md:p-12 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 md:p-12 text-center animate-scale-in duration-200">
                 <div className="rounded-full bg-muted p-4 md:p-6">
                     <Inbox className="h-8 w-8 md:h-12 md:w-12 text-muted-foreground" />
                 </div>
@@ -293,7 +299,7 @@ export function BookmarkList({ onEditBookmark }: BookmarkListProps) {
     }
 
     return (
-        <div className="flex flex-col gap-2 px-4 md:px-6 pt-2 md:pt-3 pb-6 md:pb-8 overflow-hidden max-w-full">
+        <div className="flex flex-col gap-2 px-4 md:px-6 pt-2 md:pt-3 pb-6 md:pb-8 overflow-hidden max-w-full animate-scale-in duration-200">
             {filteredBookmarks.map((bookmark) => (
                 <BookmarkListItem
                     key={bookmark.id}

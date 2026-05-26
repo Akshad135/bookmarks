@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -12,10 +12,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { getFaviconUrl, cn } from '@/lib/utils'
+import { getFaviconUrl, cn, generateId, getDomainFromUrl } from '@/lib/utils'
 import type { Bookmark } from '@/types'
 import { toast } from 'sonner'
-import { Loader2, Link, Tag, Globe, Sparkles, Heart, Plus } from 'lucide-react'
+import { Loader2, Link, Tag, Globe, Sparkles, Heart, Plus, Pin } from 'lucide-react'
 
 interface AddBookmarkDialogProps {
     open: boolean
@@ -41,10 +41,22 @@ export function AddBookmarkDialog({
     const [collectionId, setCollectionId] = useState('unsorted')
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
     const [isFavorite, setIsFavorite] = useState(false)
+    const [isPinned, setIsPinned] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [fetchError, setFetchError] = useState('')
 
     const isEditing = !!editBookmark
+    const hasSavedRef = useRef(false)
+    const activeFetchUrlRef = useRef('')
+    const pendingBookmarkIdRef = useRef('')
+
+    useEffect(() => {
+        if (open) {
+            hasSavedRef.current = false
+            pendingBookmarkIdRef.current = generateId()
+            activeFetchUrlRef.current = ''
+        }
+    }, [open])
 
     useEffect(() => {
         if (editBookmark) {
@@ -55,6 +67,7 @@ export function AddBookmarkDialog({
             setCollectionId(editBookmark.collectionId)
             setSelectedTagIds(editBookmark.tags)
             setIsFavorite(editBookmark.isFavorite)
+            setIsPinned(editBookmark.isPinned || false)
         } else if (initialData) {
             setUrl(initialData.url || '')
             setTitle(initialData.title || '')
@@ -63,6 +76,7 @@ export function AddBookmarkDialog({
             setCollectionId(initialData.collectionId || 'unsorted')
             setSelectedTagIds(initialData.tags || [])
             setIsFavorite(initialData.isFavorite || false)
+            setIsPinned(initialData.isPinned || false)
         } else {
             resetForm()
         }
@@ -76,6 +90,7 @@ export function AddBookmarkDialog({
         setCollectionId('unsorted')
         setSelectedTagIds([])
         setIsFavorite(false)
+        setIsPinned(false)
         setFetchError('')
     }
 
@@ -93,26 +108,50 @@ export function AddBookmarkDialog({
             return
         }
 
+        activeFetchUrlRef.current = targetUrl
+        const currentFetchId = pendingBookmarkIdRef.current
         setIsLoading(true)
         setFetchError('')
 
         try {
             const metadata = await fetchMetadata(targetUrl)
 
-            if (metadata) {
-                if (!title && metadata.title) setTitle(metadata.title)
-                if (!description && metadata.description) setDescription(metadata.description)
-                if (!thumbnail && metadata.image) setThumbnail(metadata.image)
-            } else {
-                const urlObj = new URL(targetUrl)
-                const hostname = urlObj.hostname.replace('www.', '')
-                if (!title) setTitle(hostname)
+            if (activeFetchUrlRef.current === targetUrl) {
+                const fetchedTitle = metadata?.title || getDomainFromUrl(targetUrl)
+                const fetchedDesc = metadata?.description || ''
+                const fetchedThumb = metadata?.image || ''
+
+                if (hasSavedRef.current) {
+                    // Update already saved bookmark in background!
+                    const existing = useBookmarkStore.getState().bookmarks.find(b => b.id === currentFetchId)
+                    if (existing) {
+                        const updates: Partial<Bookmark> = {}
+                        if (existing.title === getDomainFromUrl(targetUrl) && fetchedTitle) {
+                            updates.title = fetchedTitle
+                        }
+                        if (!existing.description && fetchedDesc) {
+                            updates.description = fetchedDesc
+                        }
+                        if (!existing.thumbnail && fetchedThumb) {
+                            updates.thumbnail = fetchedThumb
+                        }
+                        if (Object.keys(updates).length > 0) {
+                            updateBookmark(currentFetchId, updates)
+                        }
+                    }
+                } else {
+                    if (!title && fetchedTitle) setTitle(fetchedTitle)
+                    if (!description && fetchedDesc) setDescription(fetchedDesc)
+                    if (!thumbnail && fetchedThumb) setThumbnail(fetchedThumb)
+                }
             }
         } catch {
-            setFetchError('Could not fetch metadata')
+            if (!hasSavedRef.current) {
+                setFetchError('Could not fetch metadata')
+            }
+        } finally {
+            setIsLoading(false)
         }
-
-        setIsLoading(false)
     }
 
     const handleUrlBlur = () => {
@@ -140,18 +179,21 @@ export function AddBookmarkDialog({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (!url || !title) return
+        if (!url) return
+
+        // Default to hostname if title is empty, avoiding hard stop for user!
+        const finalTitle = title.trim() || getDomainFromUrl(url)
 
         try {
             const bookmarkData = {
                 url,
-                title,
+                title: finalTitle,
                 description: description || undefined,
                 thumbnail: thumbnail || undefined,
                 collectionId,
                 tags: selectedTagIds,
                 isFavorite,
-                isPinned: editBookmark?.isPinned ?? false,
+                isPinned,
                 favicon: getFaviconUrl(url),
             }
 
@@ -159,7 +201,11 @@ export function AddBookmarkDialog({
                 updateBookmark(editBookmark.id, bookmarkData)
                 toast.success('Bookmark updated')
             } else {
-                addBookmark(bookmarkData)
+                addBookmark({
+                    ...bookmarkData,
+                    id: pendingBookmarkIdRef.current
+                } as any)
+                hasSavedRef.current = true
                 toast.success('Bookmark added')
             }
 
@@ -332,20 +378,35 @@ export function AddBookmarkDialog({
                             </div>
                         </div>
 
-                        {/* Favorite Toggle & Actions */}
+                        {/* Favorite & Pin Toggles & Actions */}
                         <div className="flex flex-col gap-4">
-                            <Button
-                                type="button"
-                                variant={isFavorite ? "secondary" : "outline"}
-                                className={cn("w-full justify-between items-center group", isFavorite && "bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-200")}
-                                onClick={() => setIsFavorite(!isFavorite)}
-                            >
-                                <span className="flex items-center gap-2">
-                                    <Heart className={cn("h-4 w-4", isFavorite ? "fill-current" : "group-hover:text-red-500")} />
-                                    Add to Favorites
-                                </span>
-                                {isFavorite && <Badge variant="secondary" className="bg-red-500 text-white text-[10px] h-5">Selected</Badge>}
-                            </Button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    type="button"
+                                    variant={isFavorite ? "secondary" : "outline"}
+                                    className={cn("justify-between items-center group h-11", isFavorite && "bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border-rose-500/25")}
+                                    onClick={() => setIsFavorite(!isFavorite)}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Heart className={cn("h-4 w-4", isFavorite ? "fill-current text-rose-500" : "group-hover:text-rose-500")} />
+                                        Favorites
+                                    </span>
+                                    {isFavorite && <Badge variant="secondary" className="bg-rose-500 text-white text-[10px] px-1.5 h-5 rounded">Yes</Badge>}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant={isPinned ? "secondary" : "outline"}
+                                    className={cn("justify-between items-center group h-11", isPinned && "bg-primary/10 hover:bg-primary/20 text-primary border-primary/25")}
+                                    onClick={() => setIsPinned(!isPinned)}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Pin className={cn("h-4 w-4", isPinned ? "fill-current text-primary" : "group-hover:text-primary")} />
+                                        Pin to Top
+                                    </span>
+                                    {isPinned && <Badge variant="secondary" className="bg-primary text-white text-[10px] px-1.5 h-5 rounded">Yes</Badge>}
+                                </Button>
+                            </div>
 
                             <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
                                 <Button
@@ -356,7 +417,7 @@ export function AddBookmarkDialog({
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={!url || !title || isLoading} className="w-full gap-2">
+                                <Button type="submit" disabled={!url} className="w-full gap-2">
                                     {isEditing ? 'Save Changes' : (
                                         <>
                                             <Plus className="h-4 w-4" />

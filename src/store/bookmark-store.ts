@@ -29,7 +29,7 @@ interface BookmarkState {
     fetchFromServer: () => Promise<void>
 
     // Bookmark actions
-    addBookmark: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'isTrashed' | 'isArchived'>) => void
+    addBookmark: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'isTrashed' | 'isArchived'> & { id?: string }) => void
     updateBookmark: (id: string, updates: Partial<Bookmark>) => void
     deleteBookmark: (id: string) => void
     toggleFavorite: (id: string) => void
@@ -59,6 +59,15 @@ interface BookmarkState {
     toggleTag: (tagId: string) => void
 }
 
+const getInitialViewMode = (): ViewMode => {
+    if (typeof window === 'undefined') return 'grid'
+    const saved = localStorage.getItem('bookmark-manager-view-mode')
+    if (saved === 'grid' || saved === 'list') {
+        return saved
+    }
+    return window.innerWidth < 768 ? 'list' : 'grid'
+}
+
 const defaultCollections: Collection[] = [
     { id: 'all', name: 'All Bookmarks', icon: 'bookmark', isSystem: true },
     { id: 'unsorted', name: 'Unsorted', icon: 'inbox', isSystem: true },
@@ -72,7 +81,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             bookmarks: [],
             collections: defaultCollections,
             tags: defaultTags,
-            viewMode: typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'grid',
+            viewMode: getInitialViewMode(),
             sortOption: 'date-desc',
             activeSection: 'all',
             searchQuery: '',
@@ -202,7 +211,7 @@ export const useBookmarkStore = create<BookmarkState>()(
             // Bookmark actions with optimistic updates
             addBookmark: async (bookmark) => {
                 if (isDemoMode()) return
-                const id = generateId()
+                const id = bookmark.id || generateId()
                 const now = new Date().toISOString()
                 const newBookmark: Bookmark = {
                     ...bookmark,
@@ -520,7 +529,12 @@ export const useBookmarkStore = create<BookmarkState>()(
             },
 
             // UI actions
-            setViewMode: (mode) => set({ viewMode: mode }),
+            setViewMode: (mode) => {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('bookmark-manager-view-mode', mode)
+                }
+                set({ viewMode: mode })
+            },
             setSortOption: (option) => set({ sortOption: option }),
             setActiveSection: (section) => set({ activeSection: section }),
             setSearchQuery: (query) => set({ searchQuery: query }),

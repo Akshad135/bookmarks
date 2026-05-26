@@ -1,4 +1,5 @@
 import { BookmarkCard } from './BookmarkCard'
+import { BookmarkSkeleton } from './BookmarkSkeleton'
 import { useBookmarkStore } from '@/store/bookmark-store'
 import type { Bookmark } from '@/types'
 import { Inbox } from 'lucide-react'
@@ -6,15 +7,20 @@ import { useFilteredBookmarks } from '@/hooks/useFilteredBookmarks'
 
 interface BookmarkGridProps {
     onEditBookmark?: (bookmark: Bookmark) => void
+    isLoading?: boolean
 }
 
-export function BookmarkGrid({ onEditBookmark }: BookmarkGridProps) {
+export function BookmarkGrid({ onEditBookmark, isLoading }: BookmarkGridProps) {
     const { searchQuery } = useBookmarkStore()
     const filteredBookmarks = useFilteredBookmarks()
 
+    if (isLoading) {
+        return <BookmarkSkeleton viewMode="grid" />
+    }
+
     if (filteredBookmarks.length === 0) {
         return (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-12 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-12 text-center animate-scale-in duration-200">
                 <div className="rounded-full bg-muted p-6">
                     <Inbox className="h-12 w-12 text-muted-foreground" />
                 </div>
@@ -31,7 +37,7 @@ export function BookmarkGrid({ onEditBookmark }: BookmarkGridProps) {
     }
 
     return (
-        <div className="grid grid-cols-1 gap-3 md:gap-4 px-4 md:px-6 pt-2 md:pt-3 pb-6 md:pb-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 md:gap-4 px-4 md:px-6 pt-2 md:pt-3 pb-6 md:pb-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-scale-in duration-200">
             {filteredBookmarks.map((bookmark) => (
                 <BookmarkCard
                     key={bookmark.id}

@@ -15,7 +15,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { getDomainFromUrl, getFaviconUrl, formatDate, cn, isDemoMode } from '@/lib/utils'
+import { getDomainFromUrl, getFaviconUrl, formatDate, cn, isDemoMode, getDynamicGradientStyles } from '@/lib/utils'
 import type { Bookmark } from '@/types'
 import { toast } from 'sonner'
 import {
@@ -92,39 +92,42 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
     return (
         <Card
             className={cn(
-                'group relative flex flex-col overflow-hidden border-border bg-card transition-all duration-300',
-                'hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5',
-                isHovered && 'scale-[1.02]'
+                'group relative flex flex-col overflow-hidden border border-border bg-card/60 backdrop-blur-sm transition-all duration-300',
+                'hover:border-primary/40 hover:shadow-[0_0_25px_rgba(249,115,22,0.08),_inset_0_1px_rgba(255,255,255,0.03)]',
+                isHovered && 'scale-[1.02] bg-card/85'
             )}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Thumbnail */}
             <div
-                className="relative flex h-32 items-center justify-center bg-gradient-to-br from-secondary to-card cursor-pointer"
+                className="relative flex h-32 items-center justify-center cursor-pointer overflow-hidden border-b border-border/40"
                 onClick={handleOpenUrl}
             >
                 {!imgError && bookmark.thumbnail ? (
                     <img
                         src={bookmark.thumbnail}
                         alt={bookmark.title}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         onError={() => setImgError(true)}
                     />
                 ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                        {favicon && !imgError ? (
-                            <img
-                                src={favicon}
-                                alt=""
-                                className="h-12 w-12 rounded-lg"
-                                onError={() => setImgError(true)}
-                            />
-                        ) : (
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                                <Link className="h-6 w-6 text-primary" />
-                            </div>
-                        )}
+                    <div 
+                        className="flex h-full w-full items-center justify-center transition-all duration-300"
+                        style={getDynamicGradientStyles(bookmark.url).style}
+                    >
+                        <div className="h-14 w-14 rounded-full flex items-center justify-center bg-black/45 backdrop-blur-md border border-white/10 shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:border-white/20 group-hover:bg-black/60">
+                            {favicon && !imgError ? (
+                                <img
+                                    src={favicon}
+                                    alt=""
+                                    className="h-7 w-7 rounded"
+                                    onError={() => setImgError(true)}
+                                />
+                            ) : (
+                                <Link className="h-5 w-5 text-muted-foreground" />
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -239,12 +242,12 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
             {/* Content */}
             <div className="flex flex-1 flex-col p-4">
                 <h3
-                    className="mb-1 line-clamp-1 font-medium text-foreground cursor-pointer hover:text-primary transition-colors"
+                    className="mb-1 line-clamp-1 font-medium text-foreground cursor-pointer hover:text-primary transition-colors selectable-text"
                     onClick={handleOpenUrl}
                 >
                     {bookmark.title}
                 </h3>
-                <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">
+                <p className="mb-3 line-clamp-2 text-sm text-muted-foreground selectable-text">
                     {bookmark.description || domain}
                 </p>
 
@@ -275,9 +278,9 @@ export function BookmarkCard({ bookmark, onEdit }: BookmarkCardProps) {
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
-                        <span className="text-xs text-muted-foreground">{domain}</span>
-                        <span className="text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between pt-3 border-t border-border select-none">
+                        <span className="text-xs text-muted-foreground selectable-text">{domain}</span>
+                        <span className="text-xs text-muted-foreground selectable-text">
                             {formatDate(bookmark.createdAt)}
                         </span>
                     </div>

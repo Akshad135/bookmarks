@@ -26,7 +26,7 @@ function App() {
         window.location.hostname !== 'localhost' &&
         window.location.hostname !== '127.0.0.1'
     )
-    const { viewMode, initializeDemoMode } = useBookmarkStore()
+    const { viewMode, initializeDemoMode, isSyncing, bookmarks } = useBookmarkStore()
 
     useEffect(() => {
         initializeDemoMode()
@@ -189,9 +189,15 @@ function App() {
 
                             {/* Bookmarks View */}
                             {viewMode === 'grid' ? (
-                                <BookmarkGrid onEditBookmark={handleEditBookmark} />
+                                <BookmarkGrid 
+                                    onEditBookmark={handleEditBookmark} 
+                                    isLoading={isSyncing && bookmarks.length === 0}
+                                />
                             ) : (
-                                <BookmarkList onEditBookmark={handleEditBookmark} />
+                                <BookmarkList 
+                                    onEditBookmark={handleEditBookmark} 
+                                    isLoading={isSyncing && bookmarks.length === 0}
+                                />
                             )}
                         </div>
                     </ScrollArea>
