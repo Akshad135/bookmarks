@@ -30,7 +30,7 @@ pub async fn health(
         .lock()
         .map_err(|_| crate::models::ApiError::internal("Database lock error"))?;
 
-    conn.execute("SELECT 1", [])
+    conn.query_row("SELECT 1", [], |_| Ok(()))
         .map_err(|e| crate::models::ApiError::internal(format!("Database query error: {}", e)))?;
 
     Ok(axum::Json(HealthResponse { status: "ok" }))
