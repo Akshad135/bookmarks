@@ -22,12 +22,11 @@ pub async fn events(
         })
         .map(|_| {
             Ok(Event::default().data("reload"))
-        })
-        .keep_alive(
-            axum::response::sse::KeepAlive::new()
-                .interval(Duration::from_secs(15))
-                .text("ping"),
-        );
+        });
 
-    Sse::new(stream)
+    Sse::new(stream).keep_alive(
+        axum::response::sse::KeepAlive::new()
+            .interval(Duration::from_secs(15))
+            .text("ping"),
+    )
 }

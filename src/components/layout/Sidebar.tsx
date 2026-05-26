@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { config } from '@/lib/config'
 import { ImportBookmarksDialog } from '@/components/bookmarks/ImportBookmarksDialog'
+import { exportBookmarksToHtml } from '@/lib/bookmark-exporter'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -35,6 +36,7 @@ import {
     Inbox,
     X,
     Upload,
+    Download,
     MoreHorizontal,
     Pencil,
     Folder,
@@ -398,6 +400,33 @@ export function Sidebar({ isCollapsed, onCloseMobile }: SidebarProps) {
                             <Upload className="h-5 w-5 shrink-0" />
                             {!isCollapsed && (
                                 <span className="flex-1 text-left text-sm truncate">Import</span>
+                            )}
+                        </Button>
+
+                        {/* Export Bookmarks Button */}
+                        <Button
+                            variant="ghost"
+                            onClick={() => {
+                                if (bookmarks.length === 0) {
+                                    toast.error('No bookmarks to export');
+                                    return;
+                                }
+                                try {
+                                    exportBookmarksToHtml(bookmarks);
+                                    toast.success('Bookmarks exported successfully');
+                                } catch {
+                                    toast.error('Failed to export bookmarks');
+                                }
+                            }}
+                            className={cn(
+                                'w-full h-10 text-sidebar-muted hover:bg-sidebar-border hover:text-sidebar-foreground transition-all',
+                                isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
+                            )}
+                            title={isCollapsed ? "Export Bookmarks" : undefined}
+                        >
+                            <Download className="h-5 w-5 shrink-0" />
+                            {!isCollapsed && (
+                                <span className="flex-1 text-left text-sm truncate">Export</span>
                             )}
                         </Button>
                     </div>
