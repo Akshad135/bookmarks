@@ -1,0 +1,27 @@
+services:
+  bookmarks:
+    image: akshad135/bookmarks:latest
+    # To build locally, uncomment the line below:
+    # build: .
+    container_name: bookmark-manager
+    ports:
+      - "8080:3000" # Map host port 8080 to container port 3000
+    volumes:
+      - bookmarks-data:/data
+    environment:
+      # --- REQUIRED SECURITY ---
+      - PASSWORD=secret-password-change-me # The single-user access password
+
+      # --- OPTIONAL CUSTOMIZATION ---
+      - APP_TITLE=Bookmarks # Custom title for the sidebar/navbar
+      - APP_SUBTITLE=My personal shelf # Custom subtitle for the sidebar
+      - APP_ICON=/favicon.svg # URL or path to a custom icon/avatar
+
+      # --- ADVANCED CONFIGURATION ---
+      # - PORT=3000                   # The internal container port (default: 3000)
+      # - DB_PATH=/data/bookmarks.db  # The internal database file location (default: /data/bookmarks.db)
+      # - SESSION_SECRET=auto         # Randomly generated on startup if not specified
+    restart: unless-stopped
+
+volumes:
+  bookmarks-data:
