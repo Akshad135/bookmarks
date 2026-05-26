@@ -37,5 +37,10 @@ Thumbs.db
 # Bun
 .bun/
 
+# Rust / Server
+server/target/
+*.db
+data/
+
 # Misc
 *.local
