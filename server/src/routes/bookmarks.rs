@@ -85,6 +85,8 @@ pub async fn create(
     )
     .map_err(|e| ApiError::internal(format!("Failed to create bookmark: {}", e)))?;
 
+    let _ = state.sync_tx.send(());
+
     Ok(Json(bookmark))
 }
 
@@ -173,6 +175,8 @@ pub async fn update(
     )
     .map_err(|e| ApiError::internal(format!("Failed to update bookmark: {}", e)))?;
 
+    let _ = state.sync_tx.send(());
+
     Ok(Json(bookmark))
 }
 
@@ -194,6 +198,8 @@ pub async fn delete(
         return Err(ApiError::not_found("Bookmark not found"));
     }
 
+    let _ = state.sync_tx.send(());
+
     Ok(Json(OkResponse { ok: true }))
 }
 
@@ -206,6 +212,8 @@ pub async fn empty_trash(State(state): State<Arc<AppState>>) -> Result<Json<OkRe
 
     conn.execute("DELETE FROM bookmarks WHERE is_trashed = 1", [])
         .map_err(|e| ApiError::internal(format!("Failed to empty trash: {}", e)))?;
+
+    let _ = state.sync_tx.send(());
 
     Ok(Json(OkResponse { ok: true }))
 }

@@ -50,6 +50,8 @@ pub async fn create(
     )
     .map_err(|e| ApiError::internal(format!("Failed to create tag: {}", e)))?;
 
+    let _ = state.sync_tx.send(());
+
     Ok(Json(tag))
 }
 
@@ -87,6 +89,8 @@ pub async fn update(
         params![tag.name, tag.color, tag.id],
     )
     .map_err(|e| ApiError::internal(format!("Failed to update tag: {}", e)))?;
+
+    let _ = state.sync_tx.send(());
 
     Ok(Json(tag))
 }
@@ -137,6 +141,8 @@ pub async fn delete(
     if rows == 0 {
         return Err(ApiError::not_found("Tag not found"));
     }
+
+    let _ = state.sync_tx.send(());
 
     Ok(Json(OkResponse { ok: true }))
 }

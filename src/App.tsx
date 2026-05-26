@@ -20,6 +20,12 @@ function App() {
     const [initialDialogData, setInitialDialogData] = useState<Partial<Bookmark> | null>(null)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+    const [showSecurityWarning, setShowSecurityWarning] = useState(
+        typeof window !== 'undefined' &&
+        window.location.protocol !== 'https:' &&
+        window.location.hostname !== 'localhost' &&
+        window.location.hostname !== '127.0.0.1'
+    )
     const { viewMode, initializeDemoMode } = useBookmarkStore()
 
     useEffect(() => {
@@ -61,6 +67,28 @@ function App() {
             }
         }
     }, [])
+
+    // Real-time synchronization via Server-Sent Events (SSE)
+    useEffect(() => {
+        if (!authenticated || import.meta.env.VITE_DM === 'true') return
+
+        const eventSource = new EventSource('/api/sync/events')
+
+        eventSource.onmessage = (event) => {
+            if (event.data === 'reload') {
+                // Silently refetch bookmarks, collections, and tags
+                useBookmarkStore.getState().fetchFromServer()
+            }
+        }
+
+        eventSource.onerror = () => {
+            console.warn('Real-time sync connection interrupted. Reconnecting...')
+        }
+
+        return () => {
+            eventSource.close()
+        }
+    }, [authenticated])
 
     const handleAddBookmark = () => {
         if (import.meta.env.VITE_DM === 'true') return
@@ -130,6 +158,22 @@ function App() {
 
                 {/* Main Content */}
                 <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+                    {/* Security Warning Banner */}
+                    {showSecurityWarning && authenticated && (
+                        <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-500 text-xs px-4 py-2.5 flex items-center justify-between shrink-0 font-medium z-30">
+                            <span className="flex items-center gap-1.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                                Warning: Running over insecure HTTP. Passwords/data are sent unencrypted. We recommend enabling Tailscale HTTPS or a reverse proxy.
+                            </span>
+                            <button
+                                onClick={() => setShowSecurityWarning(false)}
+                                className="hover:text-amber-400 font-bold px-1.5 transition-colors cursor-pointer"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    )}
+
                     {/* Header */}
                     <Header
                         onAddBookmark={handleAddBookmark}

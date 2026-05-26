@@ -14,6 +14,7 @@ pub struct AppState {
     pub password_hash: String,
     pub config: models::AppConfig,
     pub rate_limiter: middleware::RateLimiter,
+    pub sync_tx: tokio::sync::broadcast::Sender<()>,
 }
 
 #[tokio::main]
@@ -50,12 +51,15 @@ async fn main() {
     let password_hash = middleware::hash_password(&password);
     tracing::info!("Password hashed successfully");
 
+    let (sync_tx, _) = tokio::sync::broadcast::channel(16);
+
     // Create shared application state
     let state = Arc::new(AppState {
         db: std::sync::Mutex::new(conn),
         password_hash,
         config,
         rate_limiter: middleware::RateLimiter::new(5, std::time::Duration::from_secs(60)),
+        sync_tx,
     });
 
     // Build router: protected routes get the auth middleware layer

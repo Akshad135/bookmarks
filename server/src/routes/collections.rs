@@ -60,6 +60,8 @@ pub async fn create(
     )
     .map_err(|e| ApiError::internal(format!("Failed to create collection: {}", e)))?;
 
+    let _ = state.sync_tx.send(());
+
     Ok(Json(collection))
 }
 
@@ -107,6 +109,8 @@ pub async fn update(
     )
     .map_err(|e| ApiError::internal(format!("Failed to update collection: {}", e)))?;
 
+    let _ = state.sync_tx.send(());
+
     Ok(Json(collection))
 }
 
@@ -140,6 +144,8 @@ pub async fn delete(
             "Collection not found or is a system collection",
         ));
     }
+
+    let _ = state.sync_tx.send(());
 
     Ok(Json(OkResponse { ok: true }))
 }
