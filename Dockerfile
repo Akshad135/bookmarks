@@ -18,7 +18,7 @@ RUN cargo build --release
 RUN rm -rf src
 # Copy the actual source files and build
 COPY server/src ./src
-RUN cargo build --release
+RUN touch src/main.rs && cargo build --release
 
 # Stage 3: Minimal runtime container
 FROM alpine:3.19
