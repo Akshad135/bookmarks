@@ -1,12 +1,30 @@
-// App configuration from environment variables
-export const config = {
-    // App branding
-    appName: import.meta.env.VITE_USER_TITLE || 'Bookmarks',
-    appSubtitle: import.meta.env.VITE_USER_SUBTITLE || '',
-    appIcon: import.meta.env.VITE_USER_ICON || '',
+// App configuration — loaded at runtime from /api/config
+// Defaults are used until loadConfig() completes (called during auth init)
 
-    // Import settings
+interface AppConfig {
+    appName: string
+    appSubtitle: string
+    appIcon: string
+    readonly maxImportLimit: number
+}
+
+export const config: AppConfig = {
+    appName: 'Bookmarks',
+    appSubtitle: '',
+    appIcon: '',
     maxImportLimit: 2500,
-} as const
+}
 
-export type AppConfig = typeof config
+export async function loadConfig(): Promise<void> {
+    try {
+        const res = await fetch('/api/config')
+        if (res.ok) {
+            const data = await res.json()
+            config.appName = data.title || config.appName
+            config.appSubtitle = data.subtitle ?? ''
+            config.appIcon = data.icon ?? ''
+        }
+    } catch {
+        // Use defaults if server is unreachable
+    }
+}

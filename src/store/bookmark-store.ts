@@ -3,30 +3,9 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { get, set, del } from 'idb-keyval'
 import type { Bookmark, Collection, Tag, ViewMode, SortOption, FilterSection } from '@/types'
 import { generateId } from '@/lib/utils'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import type { User } from '@supabase/supabase-js'
 import { isDemoMode, getFaviconUrl } from '@/lib/utils'
 import { parseBookmarkHtml } from '@/lib/bookmark-parser'
-
-// Helper to convert camelCase to snake_case for DB
-const toSnakeCase = (obj: Record<string, unknown>): Record<string, unknown> => {
-    const result: Record<string, unknown> = {}
-    for (const key in obj) {
-        const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
-        result[snakeKey] = obj[key]
-    }
-    return result
-}
-
-// Helper to convert snake_case to camelCase from DB (exported for use in hooks)
-export const toCamelCase = <T>(obj: Record<string, unknown>): T => {
-    const result: Record<string, unknown> = {}
-    for (const key in obj) {
-        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-        result[camelKey] = obj[key]
-    }
-    return result as T
-}
+import { api } from '@/lib/api'
 
 interface BookmarkState {
     bookmarks: Bookmark[]
@@ -37,17 +16,17 @@ interface BookmarkState {
     activeSection: FilterSection
     searchQuery: string
     selectedTags: string[]
-    user: User | null
+    authenticated: boolean
     isSyncing: boolean
 
     // Demo actions
     initializeDemoMode: () => Promise<void>
 
     // Auth actions
-    setUser: (user: User | null) => void
+    setAuthenticated: (value: boolean) => void
 
     // Sync actions
-    fetchFromSupabase: () => Promise<void>
+    fetchFromServer: () => Promise<void>
 
     // Bookmark actions
     addBookmark: (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt' | 'isTrashed' | 'isArchived'>) => void
@@ -78,17 +57,6 @@ interface BookmarkState {
     setSearchQuery: (query: string) => void
     setSelectedTags: (tags: string[]) => void
     toggleTag: (tagId: string) => void
-
-    // Incremental sync actions (for realtime updates from other devices)
-    addBookmarkFromRemote: (bookmark: Bookmark) => void
-    updateBookmarkFromRemote: (id: string, bookmark: Bookmark) => void
-    deleteBookmarkFromRemote: (id: string) => void
-    addCollectionFromRemote: (collection: Collection) => void
-    updateCollectionFromRemote: (id: string, collection: Collection) => void
-    deleteCollectionFromRemote: (id: string) => void
-    addTagFromRemote: (tag: Tag) => void
-    updateTagFromRemote: (id: string, tag: Tag) => void
-    deleteTagFromRemote: (id: string) => void
 }
 
 const defaultCollections: Collection[] = [
@@ -109,11 +77,11 @@ export const useBookmarkStore = create<BookmarkState>()(
             activeSection: 'all',
             searchQuery: '',
             selectedTags: [],
-            user: null,
+            authenticated: false,
             isSyncing: false,
 
             // Auth actions
-            setUser: (user) => set({ user }),
+            setAuthenticated: (value) => set({ authenticated: value }),
 
             initializeDemoMode: async () => {
                 if (!isDemoMode()) return
@@ -188,7 +156,6 @@ export const useBookmarkStore = create<BookmarkState>()(
                             isPinned: b.isPinned || false,
                             createdAt: b.addDate ? b.addDate.toISOString() : new Date().toISOString(),
                             updatedAt: new Date().toISOString(),
-                            userId: 'demo-user', // Dummy user ID
                             favicon: getFaviconUrl(b.url)
                         }
                     })
@@ -204,53 +171,29 @@ export const useBookmarkStore = create<BookmarkState>()(
             },
 
             // Sync actions
-            fetchFromSupabase: async () => {
+            fetchFromServer: async () => {
                 if (isDemoMode()) return
-                if (!isSupabaseConfigured() || !supabase) return
-                const { user } = get()
-                if (!user) return
+                if (!get().authenticated) return
 
                 set({ isSyncing: true })
 
                 try {
-                    const [bookmarksRes, collectionsRes, tagsRes] = await Promise.all([
-                        supabase.from('bookmarks').select('*'),
-                        supabase.from('collections').select('*'),
-                        supabase.from('tags').select('*'),
+                    const [bookmarks, serverCollections, tags] = await Promise.all([
+                        api.getBookmarks(),
+                        api.getCollections(),
+                        api.getTags(),
                     ])
 
-                    // Check for errors before overwriting state
-                    if (bookmarksRes.error) {
-                        console.error('Failed to fetch bookmarks:', bookmarksRes.error)
-                        return
-                    }
-                    if (collectionsRes.error) {
-                        console.error('Failed to fetch collections:', collectionsRes.error)
-                        return
-                    }
-                    if (tagsRes.error) {
-                        console.error('Failed to fetch tags:', tagsRes.error)
-                        return
-                    }
-
-                    const bookmarks = (bookmarksRes.data || []).map(b => toCamelCase<Bookmark>(b))
-                    const userCollections = (collectionsRes.data || []).map(c => toCamelCase<Collection>(c))
-                    const tags = (tagsRes.data || []).map(t => toCamelCase<Tag>(t))
-
-                    // Merge system collections with user collections
+                    // Merge system collections with server collections
                     const systemCollections = defaultCollections.filter(c => c.isSystem)
                     const mergedCollections = [
                         ...systemCollections,
-                        ...userCollections.filter(c => !c.isSystem)
+                        ...serverCollections.filter(c => !c.isSystem)
                     ]
 
-                    set({
-                        bookmarks,
-                        collections: mergedCollections,
-                        tags,
-                    })
+                    set({ bookmarks, collections: mergedCollections, tags })
                 } catch (error) {
-                    console.error('Failed to fetch from Supabase:', error)
+                    console.error('Failed to fetch from server:', error)
                 } finally {
                     set({ isSyncing: false })
                 }
@@ -258,10 +201,7 @@ export const useBookmarkStore = create<BookmarkState>()(
 
             // Bookmark actions with optimistic updates
             addBookmark: async (bookmark) => {
-                if (isDemoMode()) {
-                    // console.warn('Operation disabled in demo mode')
-                    return
-                }
+                if (isDemoMode()) return
                 const id = generateId()
                 const now = new Date().toISOString()
                 const newBookmark: Bookmark = {
@@ -279,16 +219,12 @@ export const useBookmarkStore = create<BookmarkState>()(
                     bookmarks: [...state.bookmarks, newBookmark],
                 }))
 
-                // Sync to Supabase
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const dbRecord = toSnakeCase({
-                        ...newBookmark,
-                        userId: user.id,
-                    })
-                    const { error } = await supabase.from('bookmarks').insert(dbRecord)
-                    if (error) {
-                        console.error('Failed to add bookmark to Supabase:', error)
+                // Sync to server
+                if (get().authenticated) {
+                    try {
+                        await api.createBookmark(newBookmark)
+                    } catch (error) {
+                        console.error('Failed to add bookmark:', error)
                         // Revert optimistic update
                         set((state) => ({
                             bookmarks: state.bookmarks.filter((b) => b.id !== id),
@@ -312,13 +248,12 @@ export const useBookmarkStore = create<BookmarkState>()(
                     }
                 })
 
-                // Sync to Supabase
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const dbUpdates = toSnakeCase({ ...updates, updatedAt: now })
-                    const { error } = await supabase.from('bookmarks').update(dbUpdates).eq('id', id)
-                    if (error) {
-                        console.error('Failed to update bookmark in Supabase:', error)
+                // Sync to server
+                if (get().authenticated) {
+                    try {
+                        await api.updateBookmark(id, { ...updates, updatedAt: now })
+                    } catch (error) {
+                        console.error('Failed to update bookmark:', error)
                         // Revert
                         if (previousBookmark) {
                             set((state) => ({
@@ -342,12 +277,12 @@ export const useBookmarkStore = create<BookmarkState>()(
                     }
                 })
 
-                // Sync to Supabase
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const { error } = await supabase.from('bookmarks').delete().eq('id', id)
-                    if (error) {
-                        console.error('Failed to delete bookmark from Supabase:', error)
+                // Sync to server
+                if (get().authenticated) {
+                    try {
+                        await api.deleteBookmark(id)
+                    } catch (error) {
+                        console.error('Failed to delete bookmark:', error)
                         // Revert
                         if (deletedBookmark) {
                             set((state) => ({
@@ -411,13 +346,12 @@ export const useBookmarkStore = create<BookmarkState>()(
                     bookmarks: state.bookmarks.filter((b) => !b.isTrashed),
                 }))
 
-                // Sync to Supabase
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const ids = trashedBookmarks.map((b) => b.id)
-                    const { error } = await supabase.from('bookmarks').delete().in('id', ids)
-                    if (error) {
-                        console.error('Failed to empty trash in Supabase:', error)
+                // Sync to server
+                if (get().authenticated) {
+                    try {
+                        await api.emptyTrash()
+                    } catch (error) {
+                        console.error('Failed to empty trash:', error)
                         // Revert
                         set((state) => ({
                             bookmarks: [...state.bookmarks, ...trashedBookmarks],
@@ -437,17 +371,15 @@ export const useBookmarkStore = create<BookmarkState>()(
                     collections: [...state.collections, newCollection],
                 }))
 
-                // Sync to Supabase
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const dbRecord = toSnakeCase({
-                        ...newCollection,
-                        userId: user.id,
-                        isSystem: false,
-                    })
-                    const { error } = await supabase.from('collections').insert(dbRecord)
-                    if (error) {
-                        console.error('Failed to add collection to Supabase:', error)
+                // Sync to server
+                if (get().authenticated) {
+                    try {
+                        await api.createCollection({
+                            ...newCollection,
+                            isSystem: false,
+                        })
+                    } catch (error) {
+                        console.error('Failed to add collection:', error)
                         set((state) => ({
                             collections: state.collections.filter((c) => c.id !== id),
                         }))
@@ -468,12 +400,11 @@ export const useBookmarkStore = create<BookmarkState>()(
                     }
                 })
 
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const dbUpdates = toSnakeCase(updates)
-                    const { error } = await supabase.from('collections').update(dbUpdates).eq('id', id)
-                    if (error) {
-                        console.error('Failed to update collection in Supabase:', error)
+                if (get().authenticated) {
+                    try {
+                        await api.updateCollection(id, updates)
+                    } catch (error) {
+                        console.error('Failed to update collection:', error)
                         if (previousCollection) {
                             set((state) => ({
                                 collections: state.collections.map((c) =>
@@ -498,11 +429,11 @@ export const useBookmarkStore = create<BookmarkState>()(
                     }
                 })
 
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const { error } = await supabase.from('collections').delete().eq('id', id)
-                    if (error) {
-                        console.error('Failed to delete collection from Supabase:', error)
+                if (get().authenticated) {
+                    try {
+                        await api.deleteCollection(id)
+                    } catch (error) {
+                        console.error('Failed to delete collection:', error)
                         if (deletedCollection) {
                             set((state) => ({
                                 collections: [...state.collections, deletedCollection!],
@@ -522,15 +453,11 @@ export const useBookmarkStore = create<BookmarkState>()(
                     tags: [...state.tags, newTag],
                 }))
 
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const dbRecord = toSnakeCase({
-                        ...newTag,
-                        userId: user.id,
-                    })
-                    const { error } = await supabase.from('tags').insert(dbRecord)
-                    if (error) {
-                        console.error('Failed to add tag to Supabase:', error)
+                if (get().authenticated) {
+                    try {
+                        await api.createTag(newTag)
+                    } catch (error) {
+                        console.error('Failed to add tag:', error)
                         set((state) => ({
                             tags: state.tags.filter((t) => t.id !== id),
                         }))
@@ -548,12 +475,11 @@ export const useBookmarkStore = create<BookmarkState>()(
                     }
                 })
 
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const dbUpdates = toSnakeCase(updates)
-                    const { error } = await supabase.from('tags').update(dbUpdates).eq('id', id)
-                    if (error) {
-                        console.error('Failed to update tag in Supabase:', error)
+                if (get().authenticated) {
+                    try {
+                        await api.updateTag(id, updates)
+                    } catch (error) {
+                        console.error('Failed to update tag:', error)
                         if (previousTag) {
                             set((state) => ({
                                 tags: state.tags.map((t) =>
@@ -579,11 +505,11 @@ export const useBookmarkStore = create<BookmarkState>()(
                     }
                 })
 
-                const { user } = get()
-                if (isSupabaseConfigured() && supabase && user) {
-                    const { error } = await supabase.from('tags').delete().eq('id', id)
-                    if (error) {
-                        console.error('Failed to delete tag from Supabase:', error)
+                if (get().authenticated) {
+                    try {
+                        await api.deleteTag(id)
+                    } catch (error) {
+                        console.error('Failed to delete tag:', error)
                         if (deletedTag) {
                             set((state) => ({
                                 tags: [...state.tags, deletedTag!],
@@ -605,63 +531,6 @@ export const useBookmarkStore = create<BookmarkState>()(
                         ? state.selectedTags.filter((t) => t !== tagId)
                         : [...state.selectedTags, tagId],
                 })),
-
-            // Incremental sync actions (update local state from realtime events without triggering Supabase sync)
-            addBookmarkFromRemote: (bookmark) =>
-                set((state) => {
-                    // Avoid duplicates
-                    if (state.bookmarks.some((b) => b.id === bookmark.id)) return state
-                    return { bookmarks: [...state.bookmarks, bookmark] }
-                }),
-
-            updateBookmarkFromRemote: (id, bookmark) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.map((b) => (b.id === id ? bookmark : b)),
-                })),
-
-            deleteBookmarkFromRemote: (id) =>
-                set((state) => ({
-                    bookmarks: state.bookmarks.filter((b) => b.id !== id),
-                })),
-
-            addCollectionFromRemote: (collection) =>
-                set((state) => {
-                    if (state.collections.some((c) => c.id === collection.id)) return state
-                    return { collections: [...state.collections, collection] }
-                }),
-
-            updateCollectionFromRemote: (id, collection) =>
-                set((state) => ({
-                    collections: state.collections.map((c) => (c.id === id ? collection : c)),
-                })),
-
-            deleteCollectionFromRemote: (id) =>
-                set((state) => ({
-                    collections: state.collections.filter((c) => c.id !== id && !c.isSystem),
-                    bookmarks: state.bookmarks.map((b) =>
-                        b.collectionId === id ? { ...b, collectionId: 'unsorted' } : b
-                    ),
-                })),
-
-            addTagFromRemote: (tag) =>
-                set((state) => {
-                    if (state.tags.some((t) => t.id === tag.id)) return state
-                    return { tags: [...state.tags, tag] }
-                }),
-
-            updateTagFromRemote: (id, tag) =>
-                set((state) => ({
-                    tags: state.tags.map((t) => (t.id === id ? tag : t)),
-                })),
-
-            deleteTagFromRemote: (id) =>
-                set((state) => ({
-                    tags: state.tags.filter((t) => t.id !== id),
-                    bookmarks: state.bookmarks.map((b) => ({
-                        ...b,
-                        tags: b.tags.filter((t) => t !== id),
-                    })),
-                })),
         }),
         {
             name: 'bookmark-manager-storage',
@@ -674,7 +543,7 @@ export const useBookmarkStore = create<BookmarkState>()(
                     await set(name, value)
                 },
                 removeItem: async (name: string) => {
-                    if (isDemoMode()) return // Don't delete form real storage in demo mode
+                    if (isDemoMode()) return // Don't delete from real storage in demo mode
                     await del(name)
                 },
             })),
@@ -686,7 +555,7 @@ export const useBookmarkStore = create<BookmarkState>()(
                 viewMode: state.viewMode,
                 sortOption: state.sortOption,
                 activeSection: state.activeSection,
-                // Don't persist user, isSyncing, searchQuery, selectedTags
+                // Don't persist authenticated, isSyncing, searchQuery, selectedTags
             }),
         }
     )

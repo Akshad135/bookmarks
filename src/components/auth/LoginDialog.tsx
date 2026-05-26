@@ -9,16 +9,15 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Mail, Lock, Bookmark } from 'lucide-react'
+import { Loader2, Lock, Bookmark } from 'lucide-react'
 
 interface LoginDialogProps {
     open: boolean
-    onLogin: (email: string, password: string) => Promise<{ error: string | null }>
+    onLogin: (password: string) => Promise<{ error: string | null }>
     isLoading?: boolean
 }
 
 export function LoginDialog({ open, onLogin, isLoading = false }: LoginDialogProps) {
-    const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -27,14 +26,14 @@ export function LoginDialog({ open, onLogin, isLoading = false }: LoginDialogPro
         e.preventDefault()
         setError(null)
 
-        if (!email.trim() || !password.trim()) {
-            setError('Please enter both email and password')
+        if (!password.trim()) {
+            setError('Please enter a password')
             return
         }
 
         setIsSubmitting(true)
         try {
-            const result = await onLogin(email, password)
+            const result = await onLogin(password)
             if (result.error) {
                 setError(result.error)
             }
@@ -61,28 +60,11 @@ export function LoginDialog({ open, onLogin, isLoading = false }: LoginDialogPro
                     </div>
                     <DialogTitle className="text-2xl font-bold">Welcome Back</DialogTitle>
                     <DialogDescription>
-                        Sign in to access your bookmarks
+                        Enter your password to access your bookmarks
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="you@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                disabled={loading}
-                                className="pl-10"
-                                autoComplete="email"
-                            />
-                        </div>
-                    </div>
-
                     <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
                         <div className="relative">
@@ -96,6 +78,7 @@ export function LoginDialog({ open, onLogin, isLoading = false }: LoginDialogPro
                                 disabled={loading}
                                 className="pl-10"
                                 autoComplete="current-password"
+                                autoFocus
                             />
                         </div>
                     </div>

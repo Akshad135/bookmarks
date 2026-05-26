@@ -11,7 +11,7 @@ import { AddBookmarkDialog } from '@/components/bookmarks/AddBookmarkDialog'
 import { LoginDialog } from '@/components/auth/LoginDialog'
 import { Toaster } from '@/components/ui/sonner'
 import { useBookmarkStore } from '@/store/bookmark-store'
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { useAuth } from '@/hooks/useAuth'
 import type { Bookmark } from '@/types'
 
 function App() {
@@ -26,8 +26,8 @@ function App() {
         initializeDemoMode()
     }, [initializeDemoMode])
 
-    // Initialize Supabase auth and realtime subscriptions
-    const { user, isConfigured, isLoading, login } = useSupabaseAuth()
+    // Initialize auth
+    const { authenticated, isLoading, login } = useAuth()
 
     // Handle Share Target API
     useEffect(() => {
@@ -161,9 +161,9 @@ function App() {
                     initialData={initialDialogData}
                 />
 
-                {/* Login Dialog - shown when Supabase is configured but user is not authenticated */}
+                {/* Login Dialog - shown when user is not authenticated */}
                 <LoginDialog
-                    open={isConfigured && !isLoading && !user}
+                    open={import.meta.env.VITE_DM !== 'true' && !isLoading && !authenticated}
                     onLogin={login}
                     isLoading={isLoading}
                 />
